@@ -1,0 +1,234 @@
+{
+  "customer_feedback": [
+    {
+      "id": "CF-001",
+      "source": "User Interview",
+      "date": "2024-11-05",
+      "segment": "Enterprise",
+      "text": "The onboarding flow takes too long. Users drop off after step 3 because they have to verify email before they can try the product.",
+      "theme": "onboarding"
+    },
+    {
+      "id": "CF-002",
+      "source": "Support Ticket",
+      "date": "2024-11-12",
+      "segment": "SMB",
+      "text": "Password reset emails are going to spam. When they do arrive, the link expires too quickly — 15 minutes is not enough.",
+      "theme": "authentication"
+    },
+    {
+      "id": "CF-003",
+      "source": "NPS Survey",
+      "date": "2024-10-30",
+      "segment": "Enterprise",
+      "text": "We love the product but the notification system is overwhelming. Every Jira update triggers a Slack message and an email. We need granular controls.",
+      "theme": "notifications"
+    },
+    {
+      "id": "CF-004",
+      "source": "User Interview",
+      "date": "2024-12-01",
+      "segment": "SMB",
+      "text": "Finding past decisions is impossible. We can't search across Slack and Jira at the same time. We lose context every sprint.",
+      "theme": "search"
+    },
+    {
+      "id": "CF-005",
+      "source": "Support Ticket",
+      "date": "2024-11-20",
+      "segment": "Enterprise",
+      "text": "Account recovery when MFA device is lost is a nightmare. We've had 3 employees locked out for over a week.",
+      "theme": "account_recovery"
+    },
+    {
+      "id": "CF-006",
+      "source": "Slack Discussion",
+      "date": "2024-12-10",
+      "segment": "Internal",
+      "text": "Payment failure rate is up 12% this month. Root cause appears to be a timeout bug in the Stripe webhook handler introduced in v2.3.1.",
+      "theme": "payments"
+    },
+    {
+      "id": "CF-007",
+      "source": "User Interview",
+      "date": "2024-11-28",
+      "segment": "Enterprise",
+      "text": "Withdrawal tracking is manual. Our finance team exports CSVs and reconciles in Excel. A real-time dashboard would save 4 hours per week.",
+      "theme": "financial_tracking"
+    },
+    {
+      "id": "CF-008",
+      "source": "NPS Survey",
+      "date": "2024-12-05",
+      "segment": "SMB",
+      "text": "The dark mode request has been in the backlog for two years. It's a deal-breaker for our design team working late nights.",
+      "theme": "ui_preferences"
+    },
+    {
+      "id": "CF-009",
+      "source": "Support Ticket",
+      "date": "2024-11-15",
+      "segment": "Enterprise",
+      "text": "Linking multiple accounts (personal + work) under one organization profile is broken. Users get logged out when switching.",
+      "theme": "account_management"
+    },
+    {
+      "id": "CF-010",
+      "source": "User Interview",
+      "date": "2024-12-08",
+      "segment": "Enterprise",
+      "text": "We want an AI assistant that can summarize our weekly Jira board and surface blockers before standup. Would replace our current manual process.",
+      "theme": "ai_features"
+    }
+  ],
+  "jira_tickets": [
+    {
+      "id": "JIRA-441",
+      "title": "Onboarding step 3 drop-off investigation",
+      "status": "In Progress",
+      "priority": "High",
+      "assignee": "eng-team",
+      "created": "2024-11-06",
+      "description": "Analytics show 47% of users abandon onboarding at the email verification step. Investigate removing mandatory verification before first use.",
+      "theme": "onboarding"
+    },
+    {
+      "id": "JIRA-389",
+      "title": "Password reset link expiry — extend to 60 min",
+      "status": "Backlog",
+      "priority": "Medium",
+      "assignee": "unassigned",
+      "created": "2024-11-13",
+      "description": "Current 15-minute expiry causing support load. Extend to 60 minutes and add resend capability.",
+      "theme": "authentication"
+    },
+    {
+      "id": "JIRA-412",
+      "title": "Notification preference center",
+      "status": "Backlog",
+      "priority": "High",
+      "assignee": "unassigned",
+      "created": "2024-11-01",
+      "description": "Users need per-channel, per-event notification controls. Currently all-or-nothing.",
+      "theme": "notifications"
+    },
+    {
+      "id": "JIRA-455",
+      "title": "Cross-tool search (Slack + Jira unified)",
+      "status": "Discovery",
+      "priority": "High",
+      "assignee": "pm-team",
+      "created": "2024-12-02",
+      "description": "Design unified search index across Slack threads, Jira tickets, and Confluence docs.",
+      "theme": "search"
+    },
+    {
+      "id": "JIRA-401",
+      "title": "MFA recovery flow redesign",
+      "status": "In Progress",
+      "priority": "Critical",
+      "assignee": "security-team",
+      "created": "2024-11-21",
+      "description": "Current MFA recovery requires IT admin intervention. Design self-service backup codes flow.",
+      "theme": "account_recovery"
+    },
+    {
+      "id": "JIRA-467",
+      "title": "Stripe webhook timeout fix",
+      "status": "In Progress",
+      "priority": "Critical",
+      "assignee": "payments-team",
+      "created": "2024-12-11",
+      "description": "Webhook handler introduced in v2.3.1 has 5s timeout. Payments failing silently. Fix timeout to 30s and add retry logic.",
+      "theme": "payments"
+    },
+    {
+      "id": "JIRA-378",
+      "title": "Dark mode implementation",
+      "status": "Backlog",
+      "priority": "Low",
+      "assignee": "unassigned",
+      "created": "2022-08-14",
+      "description": "System-wide dark mode following OS preference. Requires design system token audit.",
+      "theme": "ui_preferences"
+    },
+    {
+      "id": "JIRA-490",
+      "title": "Referral program feature",
+      "status": "Discovery",
+      "priority": "Medium",
+      "assignee": "growth-team",
+      "created": "2024-12-15",
+      "description": "Product-led referral program. User shares link, both get 30-day free extension. Track attribution.",
+      "theme": "growth"
+    }
+  ],
+  "historical_prds": [
+    {
+      "id": "PRD-2024-001",
+      "title": "Onboarding Redesign v1",
+      "date": "2024-03-01",
+      "status": "Shipped",
+      "summary": "Reduced onboarding steps from 7 to 4. Moved email verification to post-first-use. Result: 22% improvement in completion rate.",
+      "key_decisions": [
+        "Defer email verification to reduce friction",
+        "Progressive disclosure of features",
+        "In-app tooltip guidance instead of separate onboarding modal"
+      ],
+      "theme": "onboarding"
+    },
+    {
+      "id": "PRD-2024-002",
+      "title": "Authentication Security Upgrade",
+      "date": "2024-06-15",
+      "status": "Shipped",
+      "summary": "Added MFA support (TOTP + SMS). Introduced session management dashboard. Resolved 3 CVEs.",
+      "key_decisions": [
+        "TOTP preferred over SMS for security",
+        "Session dashboard gives users visibility into active sessions",
+        "Force re-auth after 30 days of inactivity"
+      ],
+      "theme": "authentication"
+    },
+    {
+      "id": "PRD-2024-003",
+      "title": "Payments Infrastructure v2",
+      "date": "2024-08-20",
+      "status": "Shipped",
+      "summary": "Migrated from Stripe v2 to v3 API. Added webhook retry logic. Reduced payment failure rate from 4.2% to 1.1%.",
+      "key_decisions": [
+        "Idempotency keys on all payment requests",
+        "Retry with exponential backoff (3 attempts)",
+        "Dead-letter queue for failed webhooks"
+      ],
+      "theme": "payments"
+    }
+  ],
+  "competitor_intel": [
+    {
+      "competitor": "Competitor A",
+      "strengths": ["Deep Jira integration", "Strong enterprise sales motion", "SOC2 certified"],
+      "weaknesses": ["No AI features", "Clunky mobile UX", "Expensive per-seat pricing"],
+      "pricing": "$45/user/month",
+      "notable": "Recently acquired by a larger platform — roadmap uncertain"
+    },
+    {
+      "competitor": "Competitor B",
+      "strengths": ["AI-native product", "Freemium model drives adoption", "Strong Slack integration"],
+      "weaknesses": ["Limited enterprise security controls", "No custom workflows", "Inconsistent support"],
+      "pricing": "Free / $18/user/month Pro",
+      "notable": "Growing fast in SMB segment"
+    }
+  ],
+  "roadmap_context": {
+    "current_quarter": "Q1 2025",
+    "strategic_priorities": [
+      "Improve onboarding completion rate to 75%",
+      "Reduce payment failure rate below 1%",
+      "Launch notification preference center",
+      "Begin AI assistant pilot with 5 enterprise customers"
+    ],
+    "north_star_metric": "Weekly Active Users who complete at least one core workflow",
+    "team_capacity": "Engineering: 8 FTEs, Design: 2 FTEs, Q1 budget headcount locked"
+  }
+}
