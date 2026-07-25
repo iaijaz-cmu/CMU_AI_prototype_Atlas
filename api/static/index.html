@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Atlas — Product Intelligence</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --n0: #FAFAF9;
+      --n1: #F5F4F2;
+      --n2: #ECEAE6;
+      --n3: #D6D3CD;
+      --n4: #A8A49D;
+      --n5: #6B6760;
+      --n6: #3D3B37;
+      --n7: #1C1B18;
+      --success: #4A7C59;
+      --success-bg: #EAF3ED;
+      --success-text: #2E5238;
+      --warn-bg: #F5EFE0;
+      --warn-text: #6B4F1A;
+      --fail-bg: #FBECEC;
+      --fail-text: #6B2828;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--n1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .shell {
+      display: flex;
+      width: 100%;
+      max-width: 1040px;
+      height: 700px;
+      border: 1px solid var(--n2);
+      border-radius: 12px;
+      overflow: hidden;
+      background: var(--n1);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 224px;
+      min-width: 224px;
+      background: var(--n0);
+      border-right: 1px solid var(--n2);
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar-header {
+      padding: 16px 16px 14px;
+      border-bottom: 1px solid var(--n2);
+    }
+    .logo { display: flex; align-items: center; gap: 9px; }
+    .logo-mark {
+      width: 30px; height: 30px; border-radius: 8px;
+      background: var(--n7);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .logo-mark i { font-size: 15px; color: var(--n0); }
+    .logo-text { font-size: 15px; font-weight: 500; color: var(--n7); }
+    .logo-sub { font-size: 11px; color: var(--n4); margin-top: 1px; }
+
+    .sidebar-section { padding: 14px 10px 6px; }
+    .sidebar-label {
+      font-size: 10px; font-weight: 500; color: var(--n4);
+      text-transform: uppercase; letter-spacing: 0.07em;
+      padding: 0 6px 7px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 8px; border-radius: 6px;
+      cursor: pointer; font-size: 13px; color: var(--n5);
+      transition: background 0.1s, color 0.1s;
+    }
+    .nav-item:hover { background: var(--n1); color: var(--n6); }
+    .nav-item.active { background: var(--n2); color: var(--n7); font-weight: 500; }
+    .nav-item i { font-size: 15px; }
+
+    .kb-card {
+      margin: 10px;
+      border-radius: 8px; border: 1px solid var(--n2);
+      background: var(--n1); padding: 10px 12px;
+    }
+    .kb-title { font-size: 11px; font-weight: 500; color: var(--n5); margin-bottom: 8px; }
+    .kb-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+    .kb-row:last-child { margin-bottom: 0; }
+    .kb-name { font-size: 11px; color: var(--n4); }
+    .kb-val { font-size: 11px; font-weight: 500; color: var(--n6); }
+    .kb-badge-new {
+      font-size: 10px; color: var(--success-text);
+      background: var(--success-bg); border-radius: 3px;
+      padding: 1px 5px; margin-left: 4px;
+    }
+
+    .sidebar-bottom {
+      margin-top: auto; padding: 12px;
+      border-top: 1px solid var(--n2);
+    }
+    .api-label { font-size: 10px; color: var(--n4); margin-bottom: 5px; }
+    .status-row {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--n5); padding: 4px 0;
+    }
+    .status-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--n4); display: inline-block; flex-shrink: 0;
+    }
+    .version-pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: var(--n2); color: var(--n5);
+      font-size: 10px; border-radius: 4px; padding: 3px 8px; margin-top: 8px;
+    }
+
+    /* ── Main ── */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--n1); }
+
+    .topbar {
+      padding: 12px 20px; border-bottom: 1px solid var(--n2);
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--n0);
+    }
+    .topbar-title { font-size: 14px; font-weight: 500; color: var(--n7); }
+    .topbar-right { display: flex; align-items: center; gap: 8px; }
+    .badge { font-size: 11px; border-radius: 4px; padding: 2px 8px; font-weight: 500; }
+    .badge-s2 { background: var(--n2); color: var(--n6); }
+    .badge-score { background: var(--success-bg); color: var(--success-text); }
+    .badge-model { font-size: 11px; color: var(--n4); }
+
+    .content {
+      flex: 1; overflow-y: auto;
+      padding: 18px 20px;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+
+    /* ── Metric cards ── */
+    .metrics-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .metric-card {
+      background: var(--n0); border: 1px solid var(--n2);
+      border-radius: 8px; padding: 10px 14px;
+    }
+    .metric-label { font-size: 11px; color: var(--n4); margin-bottom: 4px; }
+    .metric-val { font-size: 22px; font-weight: 500; color: var(--n7); }
+    .metric-sub { font-size: 10px; color: var(--n4); margin-top: 2px; }
+    .metric-delta { font-size: 10px; color: var(--success); }
+
+    /* ── Prompt area ── */
+    .prompt-area {
+      background: var(--n0); border: 1px solid var(--n2);
+      border-radius: 12px; padding: 14px 16px;
+    }
+    .prompt-label { font-size: 12px; color: var(--n4); margin-bottom: 8px; }
+    .prompt-examples { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+    .chip {
+      font-size: 12px; padding: 4px 11px; border-radius: 20px;
+      border: 1px solid var(--n2); background: var(--n1); color: var(--n5);
+      cursor: pointer; transition: all 0.1s;
+    }
+    .chip:hover { background: var(--n2); color: var(--n6); }
+    .chip.selected { background: var(--n7); color: var(--n0); border-color: var(--n7); }
+    .prompt-ta {
+      width: 100%; min-height: 66px; resize: none;
+      font-size: 13px; padding: 10px 12px;
+      border-radius: 6px; border: 1px solid var(--n2);
+      background: var(--n1); color: var(--n7);
+      font-family: var(--font-sans);
+    }
+    .prompt-ta:focus { outline: none; border-color: var(--n3); }
+    .prompt-footer {
+      display: flex; align-items: center;
+      justify-content: space-between; margin-top: 10px;
+    }
+    .toggle-label {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--n5); cursor: pointer;
+    }
+    .toggle {
+      width: 28px; height: 16px; border-radius: 8px;
+      background: var(--n3); position: relative;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .toggle.on { background: var(--n6); }
+    .toggle-thumb {
+      width: 12px; height: 12px; border-radius: 50%;
+      background: var(--n0); position: absolute;
+      top: 2px; left: 2px; transition: left 0.15s;
+    }
+    .toggle.on .toggle-thumb { left: 14px; }
+    .gen-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 18px; border-radius: 6px;
+      background: var(--n7); color: var(--n0);
+      font-size: 13px; font-weight: 500;
+      border: none; cursor: pointer; transition: background 0.1s;
+    }
+    .gen-btn:hover { background: var(--n6); }
+    .gen-btn:disabled { opacity: 0.6; cursor: default; }
+    .gen-btn i { font-size: 14px; }
+
+    /* ── Response card ── */
+    .response-card {
+      background: var(--n0); border: 1px solid var(--n2);
+      border-radius: 12px; padding: 16px 18px;
+    }
+    .response-header {
+      display: flex; align-items: center;
+      justify-content: space-between; margin-bottom: 14px;
+    }
+    .response-title {
+      font-size: 13px; font-weight: 500; color: var(--n7);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .response-title i { font-size: 15px; color: var(--n5); }
+    .copy-btn {
+      font-size: 12px; color: var(--n4);
+      display: flex; align-items: center; gap: 4px;
+      cursor: pointer; padding: 4px 9px;
+      border-radius: 6px; border: 1px solid var(--n2);
+      background: var(--n1); transition: color 0.1s;
+    }
+    .copy-btn:hover { color: var(--n6); }
+    .response-section { margin-bottom: 12px; }
+    .response-h2 {
+      font-size: 13px; font-weight: 500; color: var(--n7);
+      margin-bottom: 6px; padding-bottom: 4px;
+      border-bottom: 1px solid var(--n2);
+    }
+    .response-bullet {
+      display: flex; gap: 8px; margin-bottom: 5px;
+      font-size: 12.5px; line-height: 1.65; color: var(--n5);
+    }
+    .response-bullet::before { content: "–"; color: var(--n3); flex-shrink: 0; }
+    .cite {
+      display: inline-flex; font-size: 10px; font-weight: 500;
+      background: var(--n2); color: var(--n5);
+      border-radius: 3px; padding: 0 5px; margin-left: 3px;
+      vertical-align: middle;
+    }
+    .response-error {
+      display: none; font-size: 12.5px; color: var(--fail-text);
+      background: var(--fail-bg); border: 1px solid #e4b4b4;
+      border-radius: 8px; padding: 10px 12px; margin-bottom: 12px;
+    }
+    .uncertainty-box {
+      display: none; margin-top: 4px; padding: 10px 12px;
+      border-radius: 8px; background: var(--warn-bg); color: var(--warn-text);
+      font-size: 12px; line-height: 1.6;
+    }
+    .confidence-row {
+      display: none; align-items: center; gap: 8px;
+      margin-top: 14px; padding-top: 12px;
+      border-top: 1px solid var(--n2);
+    }
+    .confidence-label { font-size: 12px; font-weight: 500; color: var(--n6); }
+    .confidence-pill {
+      font-size: 11px; font-weight: 500; padding: 2px 10px;
+      border-radius: 20px;
+      background: var(--success-bg); color: var(--success-text);
+    }
+    .confidence-reason { font-size: 11px; color: var(--n4); }
+
+    /* ── Eval card ── */
+    .eval-card {
+      background: var(--n0); border: 1px solid var(--n2);
+      border-radius: 12px; padding: 14px 18px;
+    }
+    .eval-header {
+      font-size: 13px; font-weight: 500; color: var(--n7);
+      margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
+    }
+    .eval-header i { font-size: 15px; color: var(--n5); }
+    .eval-row { display: flex; align-items: center; gap: 10px; }
+    .score-options { display: flex; gap: 8px; }
+    .score-btn {
+      display: flex; align-items: center; gap: 5px;
+      padding: 6px 12px; border-radius: 6px;
+      border: 1px solid var(--n2); background: var(--n1);
+      font-size: 12px; cursor: pointer; color: var(--n5);
+      transition: all 0.1s; font-family: var(--font-sans);
+    }
+    .score-btn:hover { border-color: var(--n3); color: var(--n6); }
+    .score-btn.pass { background: var(--success-bg); color: var(--success-text); border-color: #b4d4be; }
+    .score-btn.partial { background: var(--warn-bg); color: var(--warn-text); border-color: #dfc98a; }
+    .score-btn.fail { background: #FBECEC; color: #6B2828; border-color: #e4b4b4; }
+    .notes-input {
+      flex: 1; font-size: 12px; padding: 6px 10px;
+      border-radius: 6px; border: 1px solid var(--n2);
+      background: var(--n1); color: var(--n6);
+      font-family: var(--font-sans);
+    }
+    .notes-input:focus { outline: none; border-color: var(--n3); }
+    .log-btn {
+      padding: 6px 14px; border-radius: 6px;
+      background: var(--n1); border: 1px solid var(--n2);
+      color: var(--n6); font-size: 12px; cursor: pointer;
+      font-family: var(--font-sans);
+    }
+    .log-btn:hover { background: var(--n2); }
+  </style>
+</head>
+<body>
+
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <div class="logo-mark"><i class="ti ti-brain"></i></div>
+        <div>
+          <div class="logo-text">Atlas</div>
+          <div class="logo-sub">Product intelligence</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Workspace</div>
+      <div class="nav-item active"><i class="ti ti-layout-dashboard"></i> Generate</div>
+      <div class="nav-item"><i class="ti ti-history"></i> History</div>
+      <div class="nav-item"><i class="ti ti-chart-bar"></i> Eval results</div>
+      <div class="nav-item"><i class="ti ti-settings"></i> Settings</div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Quick prompts</div>
+      <div class="nav-item" onclick="fillPrompt('Create a PRD for improving onboarding completion')"><i class="ti ti-file-text"></i> PRD — onboarding</div>
+      <div class="nav-item" onclick="fillPrompt('Recommend Q3 roadmap priorities')"><i class="ti ti-map"></i> Roadmap priorities</div>
+      <div class="nav-item" onclick="fillPrompt('Generate Jira stories for password reset')"><i class="ti ti-checklist"></i> Jira stories</div>
+      <div class="nav-item" onclick="fillPrompt('Compare product against Competitor A')"><i class="ti ti-chart-arrows"></i> Competitor compare</div>
+      <div class="nav-item" onclick="fillPrompt('Prioritize roadmap with sparse evidence')"><i class="ti ti-alert-triangle"></i> Edge: sparse data</div>
+    </div>
+
+    <div class="kb-card">
+      <div class="kb-title">Knowledge base v2</div>
+      <div class="kb-row"><span class="kb-name">Feedback</span><span class="kb-val">17 <span class="kb-badge-new">+7</span></span></div>
+      <div class="kb-row"><span class="kb-name">Jira tickets</span><span class="kb-val">13 <span class="kb-badge-new">+5</span></span></div>
+      <div class="kb-row"><span class="kb-name">PRDs</span><span class="kb-val">5 <span class="kb-badge-new">+2</span></span></div>
+      <div class="kb-row"><span class="kb-name">Competitors</span><span class="kb-val">3 <span class="kb-badge-new">+1</span></span></div>
+    </div>
+
+    <div class="sidebar-bottom">
+      <div class="api-label">Backend status</div>
+      <div class="status-row">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status-text">Checking…</span>
+      </div>
+      <div class="version-pill"><i class="ti ti-tag"></i> Sprint 2 · v0.3</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <span class="topbar-title">Generate artifact</span>
+      <div class="topbar-right">
+        <span class="badge badge-s2">Sprint 2</span>
+        <span class="badge badge-score">Eval 100%</span>
+        <span class="badge-model">gpt-4o-mini</span>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="metrics-row">
+        <div class="metric-card">
+          <div class="metric-label">Overall score</div>
+          <div class="metric-val">100%</div>
+          <div class="metric-delta">↑ +10 pts vs v0.2</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Pass rate</div>
+          <div class="metric-val">50/50</div>
+          <div class="metric-sub">0 partials · 0 failures</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Prompt version</div>
+          <div class="metric-val">v0.3</div>
+          <div class="metric-sub">Uncertainty flags added</div>
+        </div>
+      </div>
+
+      <div class="prompt-area">
+        <div class="prompt-label">What do you need?</div>
+        <div class="prompt-examples">
+          <span class="chip selected" onclick="selectChip(this,'Create a PRD for improving onboarding completion')">PRD</span>
+          <span class="chip" onclick="selectChip(this,'Generate Jira stories for password reset')">Jira stories</span>
+          <span class="chip" onclick="selectChip(this,'Recommend Q3 roadmap priorities')">Roadmap</span>
+          <span class="chip" onclick="selectChip(this,'Compare product against Competitor A')">Competitor</span>
+          <span class="chip" onclick="selectChip(this,'Prioritize roadmap with sparse evidence')">Edge case</span>
+        </div>
+        <textarea class="prompt-ta" id="prompt-ta" placeholder="e.g. Create a PRD for notification preferences…">Create a PRD for improving onboarding completion</textarea>
+        <div class="prompt-footer">
+          <label class="toggle-label">
+            <div class="toggle" id="ctx-toggle" onclick="toggleCtx()"><div class="toggle-thumb"></div></div>
+            Show retrieved themes
+          </label>
+          <button class="gen-btn" id="gen-btn"><i class="ti ti-sparkles"></i> Generate</button>
+        </div>
+        <div id="themes-row" style="display:none; margin-top:8px; font-size:11px; color:var(--n4);"></div>
+      </div>
+
+      <div class="response-card">
+        <div class="response-header">
+          <div class="response-title"><i class="ti ti-file-description"></i> <span id="response-title-text">Atlas response</span></div>
+          <button class="copy-btn" id="copy-btn"><i class="ti ti-copy"></i> Copy</button>
+        </div>
+        <div class="response-error" id="response-error"></div>
+        <div id="response-sections">
+          <div class="response-section">
+            <div class="response-h2">Get started</div>
+            <div class="response-bullet">Click <strong>Generate</strong> above to run a real query against the Atlas API and knowledge base — this card will fill in with a live response, citations, and a confidence score.</div>
+          </div>
+        </div>
+        <div class="uncertainty-box" id="uncertainty-box">
+          <strong>Uncertainty flags</strong>
+          <div id="uncertainty-text" style="margin-top:4px;"></div>
+        </div>
+        <div class="confidence-row" id="confidence-row">
+          <span class="confidence-label">Confidence:</span>
+          <span class="confidence-pill" id="confidence-pill">—</span>
+          <span class="confidence-reason" id="confidence-reason"></span>
+        </div>
+      </div>
+
+      <div class="eval-card">
+        <div class="eval-header"><i class="ti ti-clipboard-check"></i> Evaluate this response</div>
+        <div class="eval-row">
+          <div class="score-options">
+            <button class="score-btn pass"><i class="ti ti-check"></i> Pass</button>
+            <button class="score-btn partial"><i class="ti ti-alert-triangle"></i> Partial</button>
+            <button class="score-btn fail"><i class="ti ti-x"></i> Fail</button>
+          </div>
+          <input class="notes-input" placeholder="Notes — e.g. missing citation on claim 2" />
+          <button class="log-btn">Log</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  function fillPrompt(text) { document.getElementById('prompt-ta').value = text; }
+  function selectChip(el, text) {
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('prompt-ta').value = text;
+  }
+  function toggleCtx() { document.getElementById('ctx-toggle').classList.toggle('on'); }
+  document.querySelectorAll('.score-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cls = btn.classList.contains('pass') ? 'pass' : btn.classList.contains('partial') ? 'partial' : 'fail';
+      document.querySelectorAll('.score-btn').forEach(b => b.classList.remove('pass', 'partial', 'fail'));
+      btn.classList.add(cls);
+    });
+  });
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', function () {
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+
+  // ── Live wiring to the Atlas API (same-origin: FastAPI serves this page) ──
+  async function checkHealth() {
+    const dot = document.getElementById('status-dot');
+    const text = document.getElementById('status-text');
+    try {
+      const res = await fetch('/api/health');
+      if (!res.ok) throw new Error('bad status');
+      const data = await res.json();
+      dot.style.background = 'var(--success)';
+      text.textContent = `Connected · ${data.model}`;
+    } catch (e) {
+      dot.style.background = '#B4302E';
+      text.textContent = 'Backend unreachable';
+    }
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function renderInlineCitations(text) {
+    return escapeHtml(text).replace(/\b(CF-\d+|JIRA-\d+|PRD-\d{4}-\d+|ADR-\d+)\b/g, '<span class="cite">$1</span>');
+  }
+
+  function renderBody(bodyMarkdown) {
+    const container = document.getElementById('response-sections');
+    container.innerHTML = '';
+    const lines = bodyMarkdown.split('\n');
+    let currentSection = null;
+
+    lines.forEach(rawLine => {
+      const line = rawLine.trim();
+      if (!line) return;
+      if (/^##\s+/.test(line)) return; // title already shown in the header
+      const h3 = line.match(/^###\s+(.+)$/);
+      if (h3) {
+        currentSection = document.createElement('div');
+        currentSection.className = 'response-section';
+        const heading = document.createElement('div');
+        heading.className = 'response-h2';
+        heading.textContent = h3[1];
+        currentSection.appendChild(heading);
+        container.appendChild(currentSection);
+        return;
+      }
+      if (!currentSection) {
+        currentSection = document.createElement('div');
+        currentSection.className = 'response-section';
+        container.appendChild(currentSection);
+      }
+      const bullet = line.match(/^[-*]\s+(.+)$/);
+      const row = document.createElement('div');
+      row.className = 'response-bullet';
+      row.innerHTML = renderInlineCitations(bullet ? bullet[1] : line);
+      currentSection.appendChild(row);
+    });
+
+    if (!container.children.length) {
+      const fallback = document.createElement('div');
+      fallback.className = 'response-section';
+      fallback.innerHTML = `<div class="response-bullet">${escapeHtml(bodyMarkdown)}</div>`;
+      container.appendChild(fallback);
+    }
+  }
+
+  function confidenceStyle(level) {
+    if (level === 'High') return { bg: 'var(--success-bg)', fg: 'var(--success-text)' };
+    if (level === 'Medium') return { bg: 'var(--warn-bg)', fg: 'var(--warn-text)' };
+    return { bg: 'var(--fail-bg)', fg: 'var(--fail-text)' };
+  }
+
+  async function generate() {
+    const btn = document.getElementById('gen-btn');
+    const ta = document.getElementById('prompt-ta');
+    const errorBox = document.getElementById('response-error');
+    const message = ta.value.trim();
+    if (!message) return;
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ti ti-loader-2"></i> Generating…';
+    errorBox.style.display = 'none';
+
+    try {
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Generation failed');
+
+      document.getElementById('response-title-text').textContent = data.title || 'Atlas response';
+      renderBody(data.body || data.content || '');
+
+      const uBox = document.getElementById('uncertainty-box');
+      if (data.uncertaintyFlags) {
+        document.getElementById('uncertainty-text').innerHTML = renderInlineCitations(data.uncertaintyFlags);
+        uBox.style.display = 'block';
+      } else {
+        uBox.style.display = 'none';
+      }
+
+      const cRow = document.getElementById('confidence-row');
+      if (data.confidence) {
+        const pill = document.getElementById('confidence-pill');
+        const style = confidenceStyle(data.confidence.level);
+        pill.textContent = data.confidence.level;
+        pill.style.background = style.bg;
+        pill.style.color = style.fg;
+        document.getElementById('confidence-reason').textContent = data.confidence.reason;
+        cRow.style.display = 'flex';
+      } else {
+        cRow.style.display = 'none';
+      }
+
+      const themesRow = document.getElementById('themes-row');
+      if (document.getElementById('ctx-toggle').classList.contains('on') && data.themes) {
+        themesRow.textContent = 'Retrieved themes: ' + data.themes.join(', ');
+        themesRow.style.display = 'block';
+      } else {
+        themesRow.style.display = 'none';
+      }
+    } catch (e) {
+      errorBox.textContent = e.message || 'Something went wrong calling the Atlas API.';
+      errorBox.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ti ti-sparkles"></i> Generate';
+    }
+  }
+
+  document.getElementById('gen-btn').addEventListener('click', generate);
+  document.getElementById('copy-btn').addEventListener('click', () => {
+    const text = document.getElementById('response-sections').innerText;
+    navigator.clipboard?.writeText(text);
+  });
+
+  checkHealth();
+</script>
+
+</body>
+</html>
