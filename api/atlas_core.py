@@ -151,7 +151,7 @@ _CITATION_RE = re.compile(r"\b(CF-\d+|JIRA-\d+|PRD-\d{4}-\d+|ADR-\d+)\b")
 _CONFIDENCE_RE = re.compile(r"\*\*Confidence:\s*(High|Medium|Low)\*\*\s*(?:—|-)?\s*(.*)")
 _TITLE_RE = re.compile(r"^##\s+(.+)$", re.MULTILINE)
 _UNCERTAINTY_SECTION_RE = re.compile(
-    r"^#{2,3}\s*Uncertainty Flags\s*\n(.*?)(?=^#{2,3}\s|\Z)", re.MULTILINE | re.DOTALL
+    r"^#{2,3}\s*Uncertainty Flags\s*\n(.*?)(?=^#{2,3}\s|^\*\*Confidence:|\Z)", re.MULTILINE | re.DOTALL
 )
 
 
