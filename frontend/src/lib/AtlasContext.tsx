@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
 import { APPROVALS_SEED, INTEGRATIONS, PRD_STEP_LABELS } from './data';
-import { generate, AtlasApiError, type GenerateResult } from './api';
+import { generate, AtlasApiError, slackRespond, type GenerateResult } from './api';
+import { loadPersistedHeaderThreads, persistHeaderThreads } from './chatPersistence';
 import type {
   AgentId,
   Approval,
@@ -8,8 +9,10 @@ import type {
   ChatMessage,
   ChatMode,
   HeaderMessage,
+  HeaderThreadKey,
   Integration,
 } from './types';
+import { headerDisplayThreadKey, headerEffectiveAgent, headerSendThreadKey } from './headerChat';
 
 interface AtlasState {
   currentAgentId: AgentId | null;
@@ -20,12 +23,14 @@ interface AtlasState {
   chatTag: AgentId | null;
   chatLoading: boolean;
   headerBarOpen: boolean;
+  inlineChatOpen: boolean;
   headerDraft: string;
   headerScopeApp: string | null;
-  headerAppMenuOpen: boolean;
+  headerTargetAgent: AgentId | null;
+  headerOpenMenu: 'agent' | 'apps' | null;
   headerChatLoading: boolean;
   chatMode: ChatMode;
-  headerMessages: HeaderMessage[];
+  headerThreads: Record<HeaderThreadKey, HeaderMessage[]>;
   chatMessages: ChatMessage[];
   prdPrompt: string;
   prdGenerating: boolean;
@@ -50,12 +55,14 @@ function initialState(): AtlasState {
     chatTag: null,
     chatLoading: false,
     headerBarOpen: false,
+    inlineChatOpen: false,
     headerDraft: '',
     headerScopeApp: null,
-    headerAppMenuOpen: false,
+    headerTargetAgent: null,
+    headerOpenMenu: null,
     headerChatLoading: false,
     chatMode: 'ask',
-    headerMessages: [],
+    headerThreads: loadPersistedHeaderThreads(),
     chatMessages: [
       {
         role: 'assistant',
@@ -92,12 +99,39 @@ function useAtlasController() {
   stateRef.current = state;
 
   const patch = useCallback((p: Partial<AtlasState> | ((s: AtlasState) => Partial<AtlasState>)) => {
-    setState((s) => ({ ...s, ...(typeof p === 'function' ? p(s) : p) }));
+    setState((s) => {
+      const next = { ...s, ...(typeof p === 'function' ? p(s) : p) };
+      if (next.headerThreads !== s.headerThreads) {
+        persistHeaderThreads(next.headerThreads);
+      }
+      return next;
+    });
   }, []);
 
-  const goPicker = useCallback(() => patch({ currentAgentId: null }), [patch]);
-  const goAgent = useCallback((id: AgentId) => patch({ currentAgentId: id, tool: 'dashboard' }), [patch]);
-  const goTool = useCallback((id: string) => patch({ tool: id }), [patch]);
+  const goPicker = useCallback(
+    () =>
+      patch({
+        currentAgentId: null,
+        inlineChatOpen: false,
+        headerTargetAgent: null,
+        headerScopeApp: null,
+        headerDraft: '',
+        headerOpenMenu: null,
+        headerBarOpen: false,
+        headerChatLoading: false,
+        chatMode: 'ask',
+        chatOpen: false,
+      }),
+    [patch],
+  );
+  const goAgent = useCallback(
+    (id: AgentId) => patch({ currentAgentId: id, tool: 'dashboard', headerTargetAgent: id }),
+    [patch],
+  );
+  const goTool = useCallback(
+    (id: string) => patch({ tool: id, inlineChatOpen: false }),
+    [patch],
+  );
 
   const toggleChat = useCallback(() => patch((s) => ({ chatOpen: !s.chatOpen })), [patch]);
   const onChatDraftChange = useCallback((v: string) => patch({ chatDraft: v }), [patch]);
@@ -114,7 +148,14 @@ function useAtlasController() {
     const userMsg: ChatMessage = { role: 'user', text, tag };
     patch((cur) => ({ chatMessages: [...cur.chatMessages, userMsg], chatDraft: '', chatLoading: true }));
 
-    generate({ message: text, agent: tag })
+    generate({
+      message: text,
+      agent: tag,
+      history: stateRef.current.chatMessages
+        .filter((m) => m.role === 'user' || m.role === 'assistant')
+        .slice(-10)
+        .map((m) => ({ role: m.role, text: m.text })),
+    })
       .then((result) => {
         patch((cur) => ({
           chatLoading: false,
@@ -123,6 +164,7 @@ function useAtlasController() {
             {
               role: 'assistant',
               text: result.body,
+              title: result.title,
               tag,
               citations: result.citations,
               confidence: result.confidence,
@@ -140,57 +182,133 @@ function useAtlasController() {
   }, [patch]);
 
   const openAgentFromChat = useCallback(
-    (id: AgentId) => patch({ chatOpen: false, currentAgentId: id, tool: 'dashboard' }),
+    (id: AgentId) => patch({ chatOpen: false, currentAgentId: id, tool: 'dashboard', headerTargetAgent: id }),
     [patch],
   );
 
   const toggleHeaderBar = useCallback(
-    () => patch((s) => ({ headerBarOpen: !s.headerBarOpen, headerAppMenuOpen: false })),
+    () => patch((s) => ({ headerBarOpen: !s.headerBarOpen, headerOpenMenu: null })),
     [patch],
   );
+  const openInlineChat = useCallback(
+    () => patch({ inlineChatOpen: true, headerOpenMenu: null, headerBarOpen: false }),
+    [patch],
+  );
+  const closeInlineChat = useCallback(() => patch({ inlineChatOpen: false }), [patch]);
   const setChatMode = useCallback((m: ChatMode) => patch({ chatMode: m }), [patch]);
-  const toggleHeaderAppMenu = useCallback(
-    () => patch((s) => ({ headerAppMenuOpen: !s.headerAppMenuOpen })),
+  const toggleHeaderAgentMenu = useCallback(
+    () => patch((s) => ({ headerOpenMenu: s.headerOpenMenu === 'agent' ? null : 'agent' })),
     [patch],
   );
+  const toggleHeaderScopeMenu = useCallback(
+    () => patch((s) => ({ headerOpenMenu: s.headerOpenMenu === 'apps' ? null : 'apps' })),
+    [patch],
+  );
+  const closeHeaderMenus = useCallback(() => patch({ headerOpenMenu: null }), [patch]);
   const onHeaderDraftChange = useCallback((v: string) => patch({ headerDraft: v }), [patch]);
-  const setHeaderScope = useCallback(
-    (name: string) => patch((s) => ({ headerScopeApp: s.headerScopeApp === name ? null : name, headerAppMenuOpen: false })),
+  const setHeaderTargetAgent = useCallback(
+    (id: AgentId | null) => patch({ headerTargetAgent: id, headerOpenMenu: null }),
     [patch],
   );
+
+  const setHeaderScope = useCallback(
+    (name: string) =>
+      patch((s) => {
+        const next = s.headerScopeApp === name ? null : name;
+        const threadKey = headerSendThreadKey(s.currentAgentId, s.headerTargetAgent);
+        const scopeChanged = next !== s.headerScopeApp;
+        return {
+          headerScopeApp: next,
+          headerOpenMenu: null,
+          headerThreads: scopeChanged
+            ? { ...s.headerThreads, [threadKey]: [] }
+            : s.headerThreads,
+        };
+      }),
+    [patch],
+  );
+
+  const clearHeaderScope = useCallback(
+    () =>
+      patch((s) => {
+        const threadKey = headerSendThreadKey(s.currentAgentId, s.headerTargetAgent);
+        return {
+          headerScopeApp: null,
+          headerOpenMenu: null,
+          headerThreads: { ...s.headerThreads, [threadKey]: [] },
+        };
+      }),
+    [patch],
+  );
+
+  const activeHeaderMessages = useCallback(() => {
+    const s = stateRef.current;
+    const key = headerDisplayThreadKey(s.currentAgentId, s.headerTargetAgent);
+    return s.headerThreads[key] ?? [];
+  }, []);
 
   const sendHeaderChat = useCallback(() => {
     if (stateRef.current.headerChatLoading) return;
     const text = stateRef.current.headerDraft.trim();
     if (!text) return;
-    const scope = stateRef.current.headerScopeApp;
-    const agent = stateRef.current.currentAgentId;
-    const userMsg: HeaderMessage = { role: 'user', text, scope };
-    patch((cur) => ({ headerMessages: [...cur.headerMessages, userMsg], headerDraft: '', headerChatLoading: true }));
+    const s0 = stateRef.current;
+    const scope = s0.headerScopeApp;
+    const agent = headerEffectiveAgent(s0.currentAgentId, s0.headerTargetAgent);
+    const threadKey = headerSendThreadKey(s0.currentAgentId, s0.headerTargetAgent);
+    const prior = s0.headerThreads[threadKey] ?? [];
+    const userMsg: HeaderMessage = { role: 'user', text, scope, agent };
 
-    generate({ message: text, agent, scope })
-      .then((result) => {
-        patch((cur) => ({
+    patch((cur) => ({
+      headerThreads: { ...cur.headerThreads, [threadKey]: [...(cur.headerThreads[threadKey] ?? []), userMsg] },
+      headerDraft: '',
+      headerChatLoading: true,
+    }));
+
+    const history = prior.map((m) => ({ role: m.role, text: m.text }));
+
+    const finish = (result: GenerateResult) => {
+      patch((cur) => {
+        const thread = cur.headerThreads[threadKey] ?? [];
+        return {
           headerChatLoading: false,
-          headerMessages: [
-            ...cur.headerMessages,
-            {
-              role: 'assistant',
-              text: result.body,
-              scope,
-              citations: result.citations,
-              confidence: result.confidence,
-              uncertaintyFlags: result.uncertaintyFlags,
-            },
-          ],
-        }));
-      })
-      .catch((err: unknown) => {
-        patch((cur) => ({
-          headerChatLoading: false,
-          headerMessages: [...cur.headerMessages, { role: 'assistant', text: `⚠️ ${errorMessage(err)}`, scope }],
-        }));
+          headerThreads: {
+            ...cur.headerThreads,
+            [threadKey]: [
+              ...thread,
+              {
+                role: 'assistant',
+                text: result.body,
+                title: result.title,
+                scope,
+                agent,
+                citations: result.citations,
+                confidence: result.confidence,
+                uncertaintyFlags: result.uncertaintyFlags,
+              },
+            ],
+          },
+        };
       });
+    };
+    const fail = (err: unknown) => {
+      patch((cur) => {
+        const thread = cur.headerThreads[threadKey] ?? [];
+        return {
+          headerChatLoading: false,
+          headerThreads: {
+            ...cur.headerThreads,
+            [threadKey]: [...thread, { role: 'assistant', text: `⚠️ ${errorMessage(err)}`, scope, agent }],
+          },
+        };
+      });
+    };
+
+    if (scope === 'Slack') {
+      slackRespond(text, false, history).then(finish).catch(fail);
+      return;
+    }
+
+    generate({ message: text, agent, scope, history }).then(finish).catch(fail);
   }, [patch]);
 
   const toggleIntegration = useCallback(
@@ -264,10 +382,17 @@ function useAtlasController() {
     sendChat,
     openAgentFromChat,
     toggleHeaderBar,
+    openInlineChat,
+    closeInlineChat,
     setChatMode,
-    toggleHeaderAppMenu,
+    toggleHeaderAgentMenu,
+    toggleHeaderScopeMenu,
+    closeHeaderMenus,
     onHeaderDraftChange,
     setHeaderScope,
+    clearHeaderScope,
+    setHeaderTargetAgent,
+    activeHeaderMessages,
     sendHeaderChat,
     toggleIntegration,
     onPrdPromptChange,

@@ -1,5 +1,6 @@
 import { useAtlas } from '../../lib/AtlasContext';
 import { AGENT_DEFS, COMPETITIVE_ROWS } from '../../lib/data';
+import { CompetitorPulseWidget } from '../CompetitorPulseWidget';
 
 export function Competitive() {
   const { state } = useAtlas();
@@ -8,7 +9,11 @@ export function Competitive() {
   return (
     <div className="p-7 max-w-[1020px] mx-auto">
       <h1 className="text-xl font-bold m-0 mb-1">Competitor Intelligence</h1>
-      <p className="text-[13px] text-[#78716C] m-0 mb-5.5">Weekly refresh from public sources — last synced July 2026</p>
+      <p className="text-[13px] text-[#78716C] m-0 mb-5.5">Live news pulse + static battlecard context</p>
+
+      <CompetitorPulseWidget accent={def.accent} accentBg={def.accentBg} />
+
+      <p className="text-[11px] font-bold text-[#A8A29E] uppercase tracking-wide mb-2 mt-2">Battlecard matrix</p>
       <div className="flex flex-col gap-3">
         {COMPETITIVE_ROWS.map((row) => (
           <div

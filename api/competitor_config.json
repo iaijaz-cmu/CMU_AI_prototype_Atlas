@@ -1,0 +1,77 @@
+{
+  "companies": [
+    {
+      "id": "google",
+      "name": "Google",
+      "ticker": "GOOGL",
+      "newsQuery": "Google Gemini AI workspace",
+      "metricTypes": [
+        "stock",
+        "news_7d"
+      ],
+      "customMetrics": []
+    },
+    {
+      "id": "notion_ai",
+      "name": "Notion AI",
+      "ticker": "",
+      "newsQuery": "Notion AI assistant",
+      "metricTypes": [
+        "news_7d"
+      ],
+      "customMetrics": [
+        {
+          "id": "g2",
+          "label": "G2 score (manual)",
+          "value": "4.7",
+          "unit": "/5"
+        }
+      ],
+      "chartTicker": "MSFT"
+    },
+    {
+      "id": "perplexity",
+      "name": "Perplexity",
+      "ticker": "",
+      "newsQuery": "Perplexity AI enterprise",
+      "metricTypes": [
+        "news_7d"
+      ],
+      "customMetrics": [],
+      "chartTicker": "META"
+    },
+    {
+      "id": "granola",
+      "name": "Granola",
+      "ticker": "",
+      "newsQuery": "Granola AI meeting notes",
+      "metricTypes": [
+        "news_7d"
+      ],
+      "customMetrics": [],
+      "chartTicker": "CRM"
+    },
+    {
+      "id": "dovetail",
+      "name": "Dovetail",
+      "ticker": "",
+      "newsQuery": "Dovetail research AI UX",
+      "metricTypes": [
+        "news_7d"
+      ],
+      "customMetrics": [],
+      "chartTicker": "ADBE"
+    },
+    {
+      "id": "31d54845",
+      "name": "OpenAI",
+      "ticker": "",
+      "newsQuery": "OpenAI",
+      "metricTypes": [
+        "news_7d"
+      ],
+      "customMetrics": [],
+      "chartTicker": "MSFT"
+    }
+  ]
+}

@@ -24,6 +24,7 @@ import type {
   ImpactLevel,
   IcpStatus,
 } from './types';
+import { agentAccents } from './theme';
 
 export const AGENT_DEFS: AgentDef[] = [
   {
@@ -33,9 +34,9 @@ export const AGENT_DEFS: AgentDef[] = [
     tagline: 'From idea to PRD in seconds',
     description:
       'Generate PRDs, roadmaps, and feature specs grounded in org knowledge — Jira, Slack, customer feedback.',
-    accent: '#6D5BD0',
-    accentBg: '#F0EEFF',
-    shadowColor: 'rgba(109,91,208,0.18)',
+    accent: agentAccents.product.accent,
+    accentBg: agentAccents.product.bg,
+    shadowColor: agentAccents.product.shadow,
     tools: [
       { id: 'dashboard', label: 'Overview', icon: 'grid' },
       { id: 'prd', label: 'PRD Generator', icon: 'doc' },
@@ -52,9 +53,9 @@ export const AGENT_DEFS: AgentDef[] = [
     tagline: 'Tech specs that ship',
     description:
       'Break features into Jira stories, generate architecture decision records, and surface blockers before standup.',
-    accent: '#1A9E6E',
-    accentBg: '#EDFAF4',
-    shadowColor: 'rgba(26,158,110,0.18)',
+    accent: agentAccents.engineering.accent,
+    accentBg: agentAccents.engineering.bg,
+    shadowColor: agentAccents.engineering.shadow,
     tools: [
       { id: 'dashboard', label: 'Overview', icon: 'grid' },
       { id: 'techspec', label: 'Tech Spec', icon: 'code' },
@@ -71,9 +72,9 @@ export const AGENT_DEFS: AgentDef[] = [
     tagline: 'Intelligence without the legwork',
     description:
       'Competitive analysis, TAM estimates, and market signals synthesized from public sources and internal data.',
-    accent: '#D4640A',
-    accentBg: '#FFF4EA',
-    shadowColor: 'rgba(212,100,10,0.18)',
+    accent: agentAccents.market.accent,
+    accentBg: agentAccents.market.bg,
+    shadowColor: agentAccents.market.shadow,
     tools: [
       { id: 'dashboard', label: 'Overview', icon: 'grid' },
       { id: 'competitive', label: 'Competitor Intel', icon: 'radar' },
@@ -90,9 +91,9 @@ export const AGENT_DEFS: AgentDef[] = [
     tagline: 'Close faster with AI context',
     description:
       'Battle cards, ICP analysis, win/loss breakdowns, and deal intelligence from CRM and customer feedback.',
-    accent: '#0F7FBE',
-    accentBg: '#EAF4FF',
-    shadowColor: 'rgba(15,127,190,0.18)',
+    accent: agentAccents.sales.accent,
+    accentBg: agentAccents.sales.bg,
+    shadowColor: agentAccents.sales.shadow,
     tools: [
       { id: 'dashboard', label: 'Overview', icon: 'grid' },
       { id: 'battlecard', label: 'Battle Cards', icon: 'shield' },
@@ -326,6 +327,9 @@ export const LOSS_REASONS = [
 export const INTEGRATIONS: Integration[] = [
   { name: 'Jira', icon: 'jira', desc: 'Tickets, sprints, and story sync', color: '#0052CC', bg: '#E9F2FF', status: 'connected', lastSync: '2 min ago' },
   { name: 'Slack', icon: 'slack', desc: 'Channel threads and standup context', color: '#4A154B', bg: '#F5EBF5', status: 'connected', lastSync: '5 min ago' },
+  { name: 'Gmail', icon: 'gmail', desc: 'Open Atlas output in a new Gmail compose window', color: '#EA4335', bg: '#FCE8E6', status: 'connected', lastSync: 'Just now' },
+  { name: 'Google News', icon: 'google_news', desc: 'Live headlines for market & marketing analysis', color: '#4285F4', bg: '#E8F0FE', status: 'connected', lastSync: 'Live' },
+  { name: 'Bloomberg', icon: 'bloomberg', desc: 'Business & markets coverage (via news index)', color: '#000000', bg: '#F5F4F0', status: 'connected', lastSync: 'Live' },
   { name: 'Confluence / Notion', icon: 'confluence', desc: 'Historical PRDs and specs', color: '#172B4D', bg: '#F0EEFF', status: 'connected', lastSync: '1 hr ago' },
   { name: 'Google Drive', icon: 'drive', desc: 'Docs, sheets, and research decks', color: '#1FA463', bg: '#EAF7EF', status: 'not_connected', lastSync: null },
   { name: 'Zendesk', icon: 'zendesk', desc: 'Support tickets and customer feedback', color: '#17181A', bg: '#F5F4F0', status: 'not_connected', lastSync: null },

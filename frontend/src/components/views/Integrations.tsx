@@ -1,4 +1,5 @@
 import { useAtlas } from '../../lib/AtlasContext';
+import { SlackDemo } from './SlackDemo';
 
 export function Integrations() {
   const { state, toggleIntegration } = useAtlas();
@@ -10,8 +11,12 @@ export function Integrations() {
       <div className="grid gap-3.5" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))' }}>
         {state.integrations.map((app) => {
           const connected = app.status === 'connected';
+          const isSlack = app.name === 'Slack';
           return (
-            <div key={app.name} className="bg-white border border-[#E4E2DC] rounded-2xl p-4.5">
+            <div
+              key={app.name}
+              className={`bg-white border rounded-2xl p-4.5 ${isSlack ? 'border-[#4A154B]/30 ring-1 ring-[#4A154B]/10' : 'border-[#E4E2DC]'}`}
+            >
               <div className="flex items-start gap-3 mb-3">
                 <div
                   className="w-[38px] h-[38px] rounded-[11px] flex items-center justify-center font-extrabold text-sm shrink-0"
@@ -28,7 +33,7 @@ export function Integrations() {
                 {connected ? (
                   <span className="text-[11px] text-[#1A9E6E] flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#1A9E6E] inline-block" />
-                    Synced {app.lastSync}
+                    {isSlack ? 'Demo ready — scroll down' : `Synced ${app.lastSync}`}
                   </span>
                 ) : (
                   <span className="text-[11px] text-[#A8A29E]">Not connected</span>
@@ -44,6 +49,8 @@ export function Integrations() {
           );
         })}
       </div>
+
+      <SlackDemo />
     </div>
   );
 }

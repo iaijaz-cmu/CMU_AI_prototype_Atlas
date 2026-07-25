@@ -169,7 +169,10 @@ export type IntegrationIcon =
   | 'confluence'
   | 'drive'
   | 'zendesk'
-  | 'salesforce';
+  | 'salesforce'
+  | 'gmail'
+  | 'google_news'
+  | 'bloomberg';
 
 export type IntegrationStatus = 'connected' | 'not_connected';
 
@@ -202,6 +205,7 @@ export interface Confidence {
 export interface ChatMessage {
   role: 'user' | 'assistant';
   text: string;
+  title?: string | null;
   tag?: AgentId | null;
   citations?: Citation[];
   confidence?: Confidence | null;
@@ -211,10 +215,14 @@ export interface ChatMessage {
 export interface HeaderMessage {
   role: 'user' | 'assistant';
   text: string;
+  title?: string | null;
   scope?: string | null;
+  agent?: AgentId | null;
   citations?: Citation[];
   confidence?: Confidence | null;
   uncertaintyFlags?: string | null;
 }
+
+export type HeaderThreadKey = AgentId | 'home';
 
 export type ChatMode = 'ask' | 'research' | 'build';

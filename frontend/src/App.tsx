@@ -5,7 +5,7 @@ import { WorkspaceShell } from './components/WorkspaceShell';
 function AtlasApp() {
   const { state } = useAtlas();
   return (
-    <div className="h-screen w-full bg-[#F5F4F0] text-[#18181B] font-sans overflow-hidden">
+    <div className="atlas-app-shell h-screen w-full font-sans overflow-hidden">
       {state.currentAgentId ? <WorkspaceShell /> : <Picker />}
     </div>
   );

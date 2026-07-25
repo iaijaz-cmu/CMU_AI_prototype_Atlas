@@ -3,6 +3,7 @@ import { AGENT_DEFS, TECH_SPEC_EXAMPLES } from '../../lib/data';
 import { AtlasMarkdown } from '../AtlasMarkdown';
 import { CitationChip } from '../CitationChip';
 import { ConfidenceBadge } from '../ConfidenceBadge';
+import { GmailComposeButton } from '../GmailComposeButton';
 
 export function TechSpec() {
   const { state, onTechSpecPromptChange, quickFillTechSpec, runTechSpec } = useAtlas();
@@ -64,6 +65,14 @@ export function TechSpec() {
               {result.confidence && <ConfidenceBadge confidence={result.confidence} />}
             </div>
             <h2 className="text-[15px] font-bold m-0 mb-2">{result.title ?? state.techSpecPrompt}</h2>
+            <div className="mb-2">
+              <GmailComposeButton
+                subject={result.title ?? `Tech spec: ${state.techSpecPrompt}`}
+                body={result.body}
+                citationIds={result.citations.map((c) => c.id)}
+                uncertaintyFlags={result.uncertaintyFlags}
+              />
+            </div>
             {result.citations.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {result.citations.map((c) => (

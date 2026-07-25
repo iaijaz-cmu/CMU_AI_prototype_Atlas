@@ -1,6 +1,8 @@
 import { useAtlas } from '../../lib/AtlasContext';
 import { AGENT_DEFS, AGENT_ACTIVITY, AGENT_STATS, KNOWLEDGE_SOURCES } from '../../lib/data';
 import { AgentIllustrationSmall } from '../icons/AgentIllustration';
+import { CompetitorPulseWidget } from '../CompetitorPulseWidget';
+import { AgentChatResumeWidget } from '../AgentChatResumeWidget';
 
 export function Dashboard() {
   const { state } = useAtlas();
@@ -25,6 +27,8 @@ export function Dashboard() {
         </div>
       </div>
 
+      <AgentChatResumeWidget agentId={def.id} accent={def.accent} accentBg={def.accentBg} />
+
       <div className="grid gap-3 mb-5" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))' }}>
         {stats.map((s) => (
           <div key={s.label} className="bg-white border border-[#E4E2DC] rounded-2xl p-4">
@@ -34,6 +38,10 @@ export function Dashboard() {
           </div>
         ))}
       </div>
+
+      {def.id === 'market' && (
+        <CompetitorPulseWidget accent={def.accent} accentBg={def.accentBg} />
+      )}
 
       <div className="grid gap-4" style={{ gridTemplateColumns: '2fr 1fr' }}>
         <div className="bg-white border border-[#E4E2DC] rounded-2xl p-4.5">

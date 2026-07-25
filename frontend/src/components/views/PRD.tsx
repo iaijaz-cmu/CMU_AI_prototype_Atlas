@@ -3,6 +3,7 @@ import { AGENT_DEFS, PRD_EXAMPLES, PRD_STEP_LABELS } from '../../lib/data';
 import { AtlasMarkdown } from '../AtlasMarkdown';
 import { CitationChip } from '../CitationChip';
 import { ConfidenceBadge } from '../ConfidenceBadge';
+import { GmailComposeButton } from '../GmailComposeButton';
 
 export function PRD() {
   const { state, onPrdPromptChange, quickFillPrd, runPrd } = useAtlas();
@@ -85,6 +86,14 @@ export function PRD() {
               {result.confidence && <ConfidenceBadge confidence={result.confidence} />}
             </div>
             <h2 className="text-[16px] font-bold m-0 mb-2">{result.title ?? state.prdPrompt}</h2>
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <GmailComposeButton
+                subject={result.title ?? `PRD: ${state.prdPrompt}`}
+                body={result.body}
+                citationIds={result.citations.map((c) => c.id)}
+                uncertaintyFlags={result.uncertaintyFlags}
+              />
+            </div>
             {result.citations.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {result.citations.map((c) => (

@@ -133,14 +133,26 @@ For summaries and analyses:
 **Confidence: [High/Medium/Low]** — [reason]"""
 
 
-def generate_response(user_input: str, api_key: str) -> tuple[str, dict]:
+def generate_response(
+    user_input: str,
+    api_key: str,
+    history: list[dict[str, str]] | None = None,
+) -> tuple[str, dict]:
     client = OpenAI(api_key=api_key)
     ctx = retrieve_context(user_input)
     context_str = format_context(ctx)
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": f"## Retrieved Organizational Context\n{context_str}\n\n## Request\n{user_input}"},
-    ]
+    messages: list[dict[str, str]] = [{"role": "system", "content": SYSTEM_PROMPT}]
+    for turn in (history or [])[-10:]:
+        role = turn.get("role")
+        text = (turn.get("text") or "").strip()
+        if role in ("user", "assistant") and text:
+            messages.append({"role": role, "content": text[:6000]})
+    messages.append(
+        {
+            "role": "user",
+            "content": f"## Retrieved Organizational Context\n{context_str}\n\n## Request\n{user_input}",
+        }
+    )
     response = client.chat.completions.create(model=MODEL, messages=messages, temperature=0.3, max_tokens=1500)
     return response.choices[0].message.content, ctx
 
