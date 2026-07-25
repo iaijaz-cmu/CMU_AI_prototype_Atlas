@@ -73,6 +73,14 @@ User Input → Retrieval (JSON KB) → System Prompt → GPT-4o Mini → Output 
 
 ## Quickstart
 
+### Live demo (React UI + API)
+
+```bash
+chmod +x scripts/demo.sh
+./scripts/demo.sh
+# Present using docs/DEMO_SCRIPT.md — open http://localhost:5173
+```
+
 ```bash
 pip install -r requirements.txt
 

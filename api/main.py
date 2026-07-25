@@ -41,13 +41,6 @@ app.add_middleware(
 
 AgentId = Literal["product", "engineering", "market", "sales"]
 
-_AGENT_FRAMING = {
-    "product": "Respond as the Product agent — focus on PRDs, roadmap, and feature requirements.",
-    "engineering": "Respond as the Engineering agent — focus on tech specs, Jira breakdowns, and architecture decisions.",
-    "market": "Respond as the Market agent — focus on competitive intelligence, market sizing, positioning, and marketing implications from public news and internal org data.",
-    "sales": "Respond as the Sales agent — focus on battle cards, ICP fit, and deal context.",
-}
-
 
 class GenerateRequest(BaseModel):
     message: str
@@ -89,16 +82,16 @@ def _openai_key() -> str:
 
 def _build_generate_response(req: GenerateRequest) -> GenerateResponse:
     user_input = req.message.strip()
-    framing = []
-    if req.agent and req.agent in _AGENT_FRAMING:
-        framing.append(_AGENT_FRAMING[req.agent])
     if req.scope:
-        framing.append(f"The user scoped this question to the {req.scope} integration specifically.")
-    if framing:
-        user_input = f"{' '.join(framing)}\n\n{user_input}"
+        user_input = f"The user scoped this question to the {req.scope} integration (use that lens when relevant; still ground claims in retrieved context).\n\n{user_input}"
 
     try:
-        content, ctx = atlas_core.generate_response(user_input, _openai_key(), req.history or None)
+        content, ctx = atlas_core.generate_response(
+            user_input,
+            _openai_key(),
+            req.history or None,
+            req.agent,
+        )
     except HTTPException:
         raise
     except Exception as e:

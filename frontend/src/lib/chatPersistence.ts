@@ -6,7 +6,9 @@ const STORAGE_KEY = 'atlas-header-threads-v1';
 function isHeaderMessage(raw: unknown): raw is HeaderMessage {
   if (!raw || typeof raw !== 'object') return false;
   const m = raw as HeaderMessage;
-  return (m.role === 'user' || m.role === 'assistant') && typeof m.text === 'string';
+  if ((m.role !== 'user' && m.role !== 'assistant') || typeof m.text !== 'string') return false;
+  if (m.at !== undefined && typeof m.at !== 'number') return false;
+  return true;
 }
 
 export function loadPersistedHeaderThreads(): Record<HeaderThreadKey, HeaderMessage[]> {

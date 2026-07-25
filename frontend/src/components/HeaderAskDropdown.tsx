@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { useAtlas } from '../lib/AtlasContext';
 import { AGENT_DEFS } from '../lib/data';
-import type { ToolIcon as ToolIconName } from '../lib/types';
+import type { Integration, ToolIcon as ToolIconName } from '../lib/types';
 import { theme } from '../lib/theme';
 import { IntegrationLogo } from './IntegrationLogo';
 import { ToolIcon } from './icons/ToolIcon';
@@ -26,6 +27,8 @@ export function HeaderAskDropdown({ align = 'left', showAppScope = true }: Props
     if (!state.headerOpenMenu) return;
     const onDoc = (e: MouseEvent) => {
       if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+        const target = e.target as HTMLElement;
+        if (target.closest('[data-atlas-header-menu]')) return;
         closeHeaderMenus();
       }
     };
@@ -34,17 +37,71 @@ export function HeaderAskDropdown({ align = 'left', showAppScope = true }: Props
   }, [state.headerOpenMenu, closeHeaderMenus]);
 
   return (
-    <div ref={rootRef} className="flex items-center gap-2 flex-wrap">
+    <div ref={rootRef} className="flex items-center gap-2 flex-wrap relative z-50">
       <HeaderAgentDropdown align={align} />
       {showAppScope && <HeaderAppScopeDropdown align={align} />}
     </div>
   );
 }
 
-function menuPanelClass(align: 'left' | 'right') {
-  return `absolute top-full mt-1.5 w-[240px] max-h-[min(360px,55vh)] overflow-y-auto bg-white border border-n-border rounded-xl shadow-md p-1.5 z-[200] ${
-    align === 'right' ? 'right-0' : 'left-0'
-  }`;
+function useMenuPosition(anchorRef: RefObject<HTMLElement | null>, open: boolean, align: 'left' | 'right') {
+  const [pos, setPos] = useState({ top: 0, left: 0, width: 240 });
+
+  useLayoutEffect(() => {
+    if (!open || !anchorRef.current) return;
+    const update = () => {
+      const r = anchorRef.current!.getBoundingClientRect();
+      const width = 260;
+      const left = align === 'right' ? r.right - width : r.left;
+      setPos({
+        top: r.bottom + 6,
+        left: Math.max(8, Math.min(left, window.innerWidth - width - 8)),
+        width,
+      });
+    };
+    update();
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('resize', update);
+    };
+  }, [open, align, anchorRef]);
+
+  return pos;
+}
+
+function MenuPortal({
+  anchorRef,
+  open,
+  align,
+  children,
+}: {
+  anchorRef: RefObject<HTMLElement | null>;
+  open: boolean;
+  align: 'left' | 'right';
+  children: ReactNode;
+}) {
+  const pos = useMenuPosition(anchorRef, open, align);
+  if (!open) return null;
+
+  return createPortal(
+    <div
+      data-atlas-header-menu
+      className="max-h-[min(360px,55vh)] overflow-y-auto bg-white border border-n-border rounded-xl shadow-lg p-1.5"
+      style={{
+        position: 'fixed',
+        top: pos.top,
+        left: pos.left,
+        width: pos.width,
+        zIndex: 10000,
+      }}
+      role="listbox"
+    >
+      {children}
+    </div>,
+    document.body,
+  );
 }
 
 function pillButtonClass(active: boolean) {
@@ -54,6 +111,7 @@ function pillButtonClass(active: boolean) {
 }
 
 function HeaderAgentDropdown({ align }: { align: 'left' | 'right' }) {
+  const anchorRef = useRef<HTMLDivElement>(null);
   const { state, toggleHeaderAgentMenu, setHeaderTargetAgent } = useAtlas();
 
   const selectedAgent = state.headerTargetAgent
@@ -66,7 +124,7 @@ function HeaderAgentDropdown({ align }: { align: 'left' | 'right' }) {
   const open = state.headerOpenMenu === 'agent';
 
   return (
-    <div className="relative z-[100]">
+    <div className="relative" ref={anchorRef}>
       <button
         type="button"
         onClick={toggleHeaderAgentMenu}
@@ -91,42 +149,40 @@ function HeaderAgentDropdown({ align }: { align: 'left' | 'right' }) {
         <Chevron open={open} />
       </button>
 
-      {open && (
-        <div className={menuPanelClass(align)} role="listbox">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-n-text-muted px-2.5 pt-1 pb-1 m-0">Agent</p>
+      <MenuPortal anchorRef={anchorRef} open={open} align={align}>
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-n-text-muted px-2.5 pt-1 pb-1 m-0">Agent</p>
+        <AgentMenuRow
+          label="Any agent"
+          sub="Atlas picks context"
+          selected={!state.headerTargetAgent && !state.currentAgentId}
+          onClick={() => setHeaderTargetAgent(null)}
+        />
+        {AGENT_DEFS.map((ag) => (
           <AgentMenuRow
-            label="Any agent"
-            sub="Atlas picks context"
-            selected={!state.headerTargetAgent && !state.currentAgentId}
-            onClick={() => setHeaderTargetAgent(null)}
+            key={ag.id}
+            label={`${ag.name} Agent`}
+            sub={ag.tagline}
+            accent={ag.accent}
+            accentBg={ag.accentBg}
+            icon={AGENT_NAV_ICON[ag.id]}
+            selected={
+              state.headerTargetAgent === ag.id ||
+              (!state.headerTargetAgent && state.currentAgentId === ag.id)
+            }
+            onClick={() => setHeaderTargetAgent(ag.id)}
           />
-          {AGENT_DEFS.map((ag) => (
-            <AgentMenuRow
-              key={ag.id}
-              label={`${ag.name} Agent`}
-              sub={ag.tagline}
-              accent={ag.accent}
-              accentBg={ag.accentBg}
-              icon={AGENT_NAV_ICON[ag.id]}
-              selected={
-                state.headerTargetAgent === ag.id ||
-                (!state.headerTargetAgent && state.currentAgentId === ag.id)
-              }
-              onClick={() => setHeaderTargetAgent(ag.id)}
-            />
-          ))}
-        </div>
-      )}
+        ))}
+      </MenuPortal>
     </div>
   );
 }
 
 function HeaderAppScopeDropdown({ align }: { align: 'left' | 'right' }) {
+  const anchorRef = useRef<HTMLDivElement>(null);
   const { state, toggleHeaderScopeMenu, setHeaderScope, clearHeaderScope } = useAtlas();
 
-  const connected = state.integrations.filter((i) => i.status === 'connected');
   const scopedIntegration = state.headerScopeApp
-    ? connected.find((i) => i.name === state.headerScopeApp)
+    ? state.integrations.find((i) => i.name === state.headerScopeApp)
     : undefined;
   const slackScoped = state.headerScopeApp === 'Slack';
   const gmailScoped = state.headerScopeApp === 'Gmail';
@@ -137,10 +193,15 @@ function HeaderAppScopeDropdown({ align }: { align: 'left' | 'right' }) {
     ? { color: '#4A154B', background: '#F5EBF5', borderColor: '#4A154B30' }
     : gmailScoped
       ? { color: '#C4554D', background: '#FCE8E6', borderColor: '#C4554D30' }
-      : { color: theme.textSecondary, background: theme.surfaceInset, borderColor: theme.border };
+      : scopedIntegration
+        ? { color: theme.textSecondary, background: scopedIntegration.bg, borderColor: theme.border }
+        : { color: theme.textSecondary, background: theme.surfaceInset, borderColor: theme.border };
+
+  const connected = state.integrations.filter((i) => i.status === 'connected');
+  const notConnected = state.integrations.filter((i) => i.status !== 'connected');
 
   return (
-    <div className="relative z-[100]">
+    <div className="relative" ref={anchorRef}>
       <button
         type="button"
         onClick={toggleHeaderScopeMenu}
@@ -158,49 +219,87 @@ function HeaderAppScopeDropdown({ align }: { align: 'left' | 'right' }) {
         <Chevron open={open} />
       </button>
 
-      {open && (
-        <div className={menuPanelClass(align)} role="listbox">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-n-text-muted px-2.5 pt-1 pb-1 m-0">
-            App scope
+      <MenuPortal anchorRef={anchorRef} open={open} align={align}>
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-n-text-muted px-2.5 pt-1 pb-1 m-0">
+          App scope
+        </p>
+        <button
+          type="button"
+          onClick={clearHeaderScope}
+          className="w-full px-2.5 py-2 rounded-lg text-xs text-n-text-2 cursor-pointer border-none text-left hover:bg-n-surface-2"
+          style={{
+            background: !state.headerScopeApp ? theme.surfaceHover : undefined,
+            fontWeight: !state.headerScopeApp ? 600 : 400,
+          }}
+        >
+          <span className="flex items-center gap-2">
+            <AppsGridIcon />
+            <span>All apps · workspace-wide</span>
+          </span>
+        </button>
+
+        {connected.length > 0 && (
+          <p className="text-[9px] font-bold uppercase tracking-wider text-n-text-muted px-2.5 pt-2 pb-1 m-0">
+            Connected
           </p>
-          <button
-            type="button"
-            onClick={clearHeaderScope}
-            className="w-full px-2.5 py-2 rounded-lg text-xs text-n-text-2 cursor-pointer border-none text-left hover:bg-n-surface-2"
-            style={{
-              background: !state.headerScopeApp ? theme.surfaceHover : undefined,
-              fontWeight: !state.headerScopeApp ? 600 : 400,
-            }}
-          >
-            All apps
-          </button>
-          {connected.map((app) => {
-            const selected = state.headerScopeApp === app.name;
-            return (
-              <button
-                key={app.name}
-                type="button"
-                onClick={() => setHeaderScope(app.name)}
-                className="flex items-center gap-2 w-full px-2.5 py-2 rounded-lg cursor-pointer border-none text-left hover:bg-n-surface-2"
-                style={{
-                  background: selected
-                    ? app.name === 'Gmail'
-                      ? '#FCE8E6'
-                      : app.name === 'Slack'
-                        ? '#F5EBF5'
-                        : theme.surfaceHover
-                    : undefined,
-                }}
-              >
-                <IntegrationLogo icon={app.icon} bg={app.bg} size={18} radius={5} />
-                <span className="text-xs text-n-text flex-1 text-left">{app.name}</span>
-                {selected && <span className="text-[10px] font-bold text-n-text-2">✓</span>}
-              </button>
-            );
-          })}
-        </div>
-      )}
+        )}
+        {connected.map((app) => (
+          <IntegrationMenuRow
+            key={app.name}
+            app={app}
+            selected={state.headerScopeApp === app.name}
+            onClick={() => setHeaderScope(app.name)}
+          />
+        ))}
+
+        {notConnected.length > 0 && (
+          <p className="text-[9px] font-bold uppercase tracking-wider text-n-text-muted px-2.5 pt-2 pb-1 m-0">
+            Not connected
+          </p>
+        )}
+        {notConnected.map((app) => (
+          <IntegrationMenuRow key={app.name} app={app} selected={false} disabled />
+        ))}
+      </MenuPortal>
     </div>
+  );
+}
+
+function IntegrationMenuRow({
+  app,
+  selected,
+  onClick,
+  disabled,
+}: {
+  app: Integration;
+  selected: boolean;
+  onClick?: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className="flex items-center gap-2 w-full px-2.5 py-2 rounded-lg cursor-pointer border-none text-left hover:bg-n-surface-2 disabled:opacity-50 disabled:cursor-not-allowed"
+      style={{
+        background: selected
+          ? app.name === 'Gmail'
+            ? '#FCE8E6'
+            : app.name === 'Slack'
+              ? '#F5EBF5'
+              : theme.surfaceHover
+          : undefined,
+      }}
+    >
+      <IntegrationLogo icon={app.icon} bg={app.bg} size={18} radius={5} />
+      <span className="min-w-0 flex-1 text-left">
+        <span className="block text-xs font-semibold text-n-text truncate">{app.name}</span>
+        {!disabled && <span className="block text-[10px] text-n-text-muted truncate">{app.desc}</span>}
+        {disabled && <span className="block text-[10px] text-n-text-muted">Connect in Integrations</span>}
+      </span>
+      {selected && <span className="text-[10px] font-bold text-n-text-2 shrink-0">✓</span>}
+    </button>
   );
 }
 
@@ -262,7 +361,7 @@ function AgentMenuRow({
           <ToolIcon icon={icon} color={accent} size={15} />
         </span>
       ) : (
-        <span className="w-7 h-7 shrink-0 rounded-md bg-n-surface-2 border border-n-border flex items-center justify-center text-[11px] text-n-ai">
+        <span className="w-7 h-7 shrink-0 rounded-md bg-n-surface-2 border border-n-border flex items-center justify-center text-[11px] text-n-accent">
           ✦
         </span>
       )}

@@ -29,7 +29,7 @@ export function FloatingChat() {
     <>
       <div
         onClick={toggleChat}
-        className="fixed bottom-[26px] right-[26px] w-[52px] h-[52px] rounded-xl bg-white border border-n-border text-n-ai flex items-center justify-center cursor-pointer shadow-md z-40 hover:bg-n-ai-soft"
+        className="fixed bottom-[26px] right-[26px] w-[52px] h-[52px] rounded-full bg-white border border-n-border flex items-center justify-center cursor-pointer shadow-lg z-40 hover:shadow-xl hover:border-n-accent/30 transition-all"
       >
         <AtlasMark size={28} variant="ai" />
       </div>
@@ -105,7 +105,7 @@ export function FloatingChat() {
                 disabled={!state.chatDraft.trim() || state.chatLoading}
                 className="text-white border-none rounded-lg px-3.5 py-2.5 text-xs font-semibold cursor-pointer shrink-0"
                 style={{
-                  background: theme.ai,
+                  background: theme.navy,
                   opacity: state.chatDraft.trim() && !state.chatLoading ? 1 : 0.45,
                 }}
               >

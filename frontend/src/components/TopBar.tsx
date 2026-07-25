@@ -1,6 +1,5 @@
 import { useAtlas } from '../lib/AtlasContext';
 import { AGENT_DEFS } from '../lib/data';
-import { theme } from '../lib/theme';
 
 export function TopBar() {
   const { state, openInlineChat, closeInlineChat } = useAtlas();
@@ -36,8 +35,7 @@ export function TopBar() {
           <button
             type="button"
             onClick={openInlineChat}
-            className="text-[11.5px] font-semibold px-3 py-1.5 rounded-lg border border-transparent cursor-pointer text-white"
-            style={{ background: theme.ai }}
+            className="text-[11.5px] font-semibold px-4 py-2 rounded-full cursor-pointer border border-n-border bg-white text-n-text hover:bg-n-surface-2 transition-colors"
           >
             Chat
           </button>

@@ -4,17 +4,24 @@
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'Inter', ui-monospace, monospace;
 
-  --color-n-bg: #f7f6f3;
+  --color-n-bg: #f4f4f6;
   --color-n-surface: #ffffff;
-  --color-n-surface-2: #f1f1ef;
-  --color-n-inset: #fbfbf9;
-  --color-n-border: #e9e9e7;
-  --color-n-border-strong: #dfdfdd;
-  --color-n-text: #37352f;
-  --color-n-text-2: #787774;
-  --color-n-text-muted: #9b9a97;
-  --color-n-ai: #9065b0;
-  --color-n-ai-soft: #f6f3fa;
+  --color-n-surface-2: #eeeef0;
+  --color-n-inset: #fafafa;
+  --color-n-border: #e8e8ec;
+  --color-n-border-strong: #d8d8de;
+  --color-n-text: #1a2332;
+  --color-n-text-2: #5c6472;
+  --color-n-text-muted: #8a919c;
+  --color-n-navy: #1a2332;
+  --color-n-navy-soft: #e8ebf0;
+  --color-n-accent: #e36b52;
+  --color-n-accent-soft: #fdf0eb;
+  --color-n-gold: #c4a962;
+  --color-n-gold-soft: #f5f0e3;
+  --color-n-ai: #e36b52;
+  --color-n-ai-soft: #fdf0eb;
+  --color-n-peach: #fce8e2;
 }
 
 @keyframes atlas-spin {
@@ -28,7 +35,7 @@
 @keyframes atlas-fadein {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -67,26 +74,36 @@ body {
 
 .atlas-card {
   background: var(--color-n-surface);
-  border: 1px solid var(--color-n-border);
-  border-radius: 12px;
-  box-shadow: 0 1px 2px rgba(15, 15, 15, 0.04);
+  border: 1px solid rgba(26, 35, 50, 0.06);
+  border-radius: 20px;
+  box-shadow: var(--shadow-sm, 0 2px 8px rgba(26, 35, 50, 0.04));
 }
 
 .atlas-card-elevated {
   background: var(--color-n-surface);
-  border: 1px solid var(--color-n-border);
-  border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(15, 15, 15, 0.06);
+  border: 1px solid rgba(26, 35, 50, 0.05);
+  border-radius: 24px;
+  box-shadow: 0 12px 32px rgba(26, 35, 50, 0.08);
+}
+
+.atlas-widget {
+  background: var(--color-n-surface);
+  border: 1px solid rgba(26, 35, 50, 0.06);
+  border-radius: 22px;
+  box-shadow: 0 10px 28px rgba(26, 35, 50, 0.06);
 }
 
 .atlas-nav-rail {
-  background: var(--color-n-surface);
-  border-right: 1px solid var(--color-n-border);
+  background: linear-gradient(180deg, #ffffff 0%, #f8f8fa 100%);
+  border-right: 1px solid rgba(26, 35, 50, 0.07);
+  box-shadow:
+    4px 0 24px rgba(26, 35, 50, 0.06),
+    1px 0 0 rgba(255, 255, 255, 0.8) inset;
 }
 
 .atlas-nav-item {
-  border-radius: 8px;
-  transition: background 0.12s ease;
+  border-radius: 14px;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
 }
 
 .atlas-nav-item:hover {
@@ -95,24 +112,62 @@ body {
 
 .atlas-search-bar {
   background: var(--color-n-inset);
-  border: 1px solid var(--color-n-border);
-  border-radius: 10px;
+  border: 1px solid transparent;
+  border-radius: 14px;
   transition: border-color 0.12s, box-shadow 0.12s;
 }
 
 .atlas-search-bar:hover {
-  border-color: var(--color-n-border-strong);
-  box-shadow: 0 1px 3px rgba(15, 15, 15, 0.05);
+  border-color: var(--color-n-border);
+  box-shadow: 0 4px 12px rgba(26, 35, 50, 0.05);
 }
 
 .atlas-ai-badge {
-  color: var(--color-n-ai);
-  background: var(--color-n-ai-soft);
-  border: 1px solid rgba(144, 101, 176, 0.2);
+  color: var(--color-n-text-2);
+  background: var(--color-n-surface);
+  border: 1px solid var(--color-n-border);
   border-radius: 9999px;
   font-size: 11px;
   font-weight: 500;
-  padding: 4px 10px;
+  padding: 6px 14px;
+}
+
+.atlas-btn-primary {
+  background: var(--color-n-navy);
+  color: #fff;
+  border: none;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+.atlas-btn-primary:hover {
+  opacity: 0.92;
+}
+
+.atlas-btn-accent {
+  background: var(--color-n-accent);
+  color: #fff;
+  border: none;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 10px 20px;
+  cursor: pointer;
+}
+
+.atlas-btn-ghost {
+  background: transparent;
+  color: var(--color-n-text);
+  border: 1px solid var(--color-n-border);
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 10px 20px;
+  cursor: pointer;
 }
 
 ::-webkit-scrollbar {
@@ -120,9 +175,9 @@ body {
   height: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #d3d1cb;
+  background: #d0d0d6;
   border-radius: 8px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #b8b6b0;
+  background: #b8b8c0;
 }

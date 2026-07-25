@@ -5,7 +5,7 @@ interface Props {
 
 /** Minimal line mark — Notion AI–style sparkle on warm surface */
 export function AtlasMark({ size = 28, variant = 'default' }: Props) {
-  const stroke = variant === 'ai' ? '#9065B0' : '#37352F';
+  const stroke = variant === 'ai' ? '#E36B52' : '#1A2332';
   return (
     <svg width={size} height={size} viewBox="0 0 28 28" fill="none" className="shrink-0" aria-hidden>
       <rect width="28" height="28" rx="7" fill="#FFFFFF" stroke="#E9E9E7" strokeWidth="1" />
@@ -21,7 +21,7 @@ export function AtlasMark({ size = 28, variant = 'default' }: Props) {
         strokeWidth="1.4"
         strokeLinecap="round"
       />
-      <circle cx="14" cy="14" r="2" fill={variant === 'ai' ? '#9065B0' : '#37352F'} opacity="0.9" />
+      <circle cx="14" cy="14" r="2" fill={variant === 'ai' ? '#E36B52' : '#1A2332'} opacity="0.9" />
     </svg>
   );
 }

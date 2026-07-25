@@ -1,5 +1,5 @@
 import { useAtlas } from '../lib/AtlasContext';
-import { AGENT_DEFS } from '../lib/data';
+import { AGENT_DEFS, AGENT_CHAT_EXAMPLES } from '../lib/data';
 import { HeaderAskDropdown } from './HeaderAskDropdown';
 import { ChatMessageList } from './ChatMessageList';
 import { ChatTypingIndicator } from './ChatTypingIndicator';
@@ -19,6 +19,7 @@ export function InlineAgentChat({ onClose }: Props) {
   } = useAtlas();
 
   const def = AGENT_DEFS.find((a) => a.id === state.currentAgentId) ?? AGENT_DEFS[0];
+  const examples = AGENT_CHAT_EXAMPLES[def.id];
   const messages = activeHeaderMessages();
   const slackScoped = state.headerScopeApp === 'Slack';
   const gmailScoped = state.headerScopeApp === 'Gmail';
@@ -26,7 +27,7 @@ export function InlineAgentChat({ onClose }: Props) {
     ? 'Message Atlas — use Open in Gmail on replies when ready…'
     : slackScoped
       ? 'Follow up on your Slack thread…'
-      : `Message ${def.name} Agent…`;
+      : examples.placeholder;
 
   const { bottomRef, containerRef } = useChatScroll([
     messages.length,
@@ -57,11 +58,19 @@ export function InlineAgentChat({ onClose }: Props) {
         <div className="max-w-[720px] mx-auto flex flex-col gap-4 w-full">
           {messages.length === 0 && !state.headerChatLoading && (
             <div className="text-center py-12 px-4">
-              <p className="text-[15px] font-semibold text-n-text m-0 mb-2">How can I help?</p>
-              <p className="text-[13px] text-n-text-muted m-0 max-w-md mx-auto leading-relaxed">
-                Ask about {def.name.toLowerCase()} work — PRDs, specs, market intel, or deals. Pick an agent and app
-                scope in the menu above if you need to route elsewhere.
+              <p className="text-[15px] font-semibold text-n-text m-0 mb-2">{def.name} Agent</p>
+              <p className="text-[13px] text-n-text-muted m-0 max-w-md mx-auto leading-relaxed mb-3">
+                Specialized for{' '}
+                {def.id === 'product'
+                  ? 'PRDs, roadmap alignment, and requirements'
+                  : def.id === 'engineering'
+                    ? 'ADRs, tech specs, and engineering breakdowns'
+                    : def.id === 'market'
+                      ? 'competitor analysis and marketing strategy'
+                      : 'executive pitches and competitive win stories'}
+                . Answers are grounded in your org knowledge base with citations.
               </p>
+              <p className="text-[12px] text-n-text-2 m-0 max-w-md mx-auto italic">{examples.hint}</p>
             </div>
           )}
           <ChatMessageList

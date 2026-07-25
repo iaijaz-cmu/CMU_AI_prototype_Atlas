@@ -18,39 +18,46 @@ interface Props {
 }
 
 export function HomeSideNav({ collapsed, onToggleCollapse }: Props) {
-  const { goAgent } = useAtlas();
+  const { state, goAgent } = useAtlas();
+  const activeId = state.currentAgentId;
 
   return (
     <aside
-      className="shrink-0 atlas-nav-rail flex flex-col h-full transition-[width] duration-200 ease-out overflow-hidden"
-      style={{ width: collapsed ? 72 : 220 }}
+      className="shrink-0 atlas-nav-rail flex flex-col h-full transition-[width] duration-200 ease-out overflow-hidden relative z-10"
+      style={{ width: collapsed ? 72 : 212 }}
       aria-expanded={!collapsed}
     >
-      <button
-        type="button"
-        onClick={onToggleCollapse}
-        className="flex items-center gap-2.5 p-4 border-b border-[#E9E9E7] w-full text-left cursor-pointer hover:bg-[#F1F1EF] border-none bg-transparent"
-        title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        aria-label={collapsed ? 'Expand Atlas navigation' : 'Collapse Atlas navigation'}
-      >
-        <AtlasMark size={collapsed ? 32 : 28} variant="ai" />
-        {!collapsed && (
-          <span className="text-[13.5px] font-semibold text-[#37352F] truncate">Atlas</span>
-        )}
-      </button>
+      <div className="p-3 border-b border-n-border/60 bg-white/40">
+        <button
+          type="button"
+          onClick={onToggleCollapse}
+          className={`w-full flex items-center gap-2.5 py-2 rounded-xl cursor-pointer border-none bg-transparent hover:bg-n-surface-2 transition-colors ${
+            collapsed ? 'justify-center px-0' : 'px-2'
+          }`}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          <AtlasMark size={28} variant="ai" />
+          {!collapsed && (
+            <span className="text-[14px] font-semibold text-n-text truncate tracking-tight">Atlas</span>
+          )}
+        </button>
+      </div>
 
-      <nav className="flex-1 py-3 px-2 flex flex-col gap-0.5 overflow-y-auto" aria-label="Agents">
+      <nav className="flex-1 p-2 flex flex-col gap-0.5 overflow-y-auto" aria-label="Agents">
         {!collapsed && (
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-[#9B9A97] px-2.5 mb-1 m-0">Agents</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-n-text-muted px-2.5 pt-1 pb-2 m-0">
+            Agents
+          </p>
         )}
         {AGENT_DEFS.map((ag) => (
           <AgentNavItem
             key={ag.id}
-            agentId={ag.id}
             name={ag.name}
             accent={ag.accent}
             accentBg={ag.accentBg}
+            icon={AGENT_NAV_ICON[ag.id]}
             collapsed={collapsed}
+            active={activeId === ag.id}
             onSelect={() => goAgent(ag.id)}
           />
         ))}
@@ -60,40 +67,46 @@ export function HomeSideNav({ collapsed, onToggleCollapse }: Props) {
 }
 
 function AgentNavItem({
-  agentId,
   name,
   accent,
   accentBg,
+  icon,
   collapsed,
+  active,
   onSelect,
 }: {
-  agentId: AgentId;
   name: string;
   accent: string;
   accentBg: string;
+  icon: ToolIconName;
   collapsed: boolean;
+  active: boolean;
   onSelect: () => void;
 }) {
-  const icon = AGENT_NAV_ICON[agentId];
-
   return (
     <button
       type="button"
       onClick={onSelect}
       title={collapsed ? name : undefined}
       aria-label={`Open ${name} agent`}
-      className={`flex items-center gap-2.5 atlas-nav-item cursor-pointer border-none text-left w-full ${
-        collapsed ? 'justify-center px-0 py-2.5' : 'px-2.5 py-2.5'
-      }`}
+      aria-current={active ? 'page' : undefined}
+      className={`flex items-center gap-2.5 w-full py-2 rounded-xl cursor-pointer border-none transition-colors ${
+        collapsed ? 'justify-center px-0' : 'px-2.5'
+      } ${active ? '' : 'bg-transparent hover:bg-n-surface-2'}`}
+      style={
+        active
+          ? { background: accentBg, boxShadow: `inset 0 0 0 1px ${accent}30` }
+          : undefined
+      }
     >
       <span
-        className="w-8 h-8 shrink-0 rounded-md flex items-center justify-center border border-[#E9E9E7]"
-        style={{ background: accentBg }}
+        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-white/70 border border-n-border/50"
+        style={active ? { background: '#fff', borderColor: `${accent}25` } : { background: accentBg }}
       >
         <ToolIcon icon={icon} color={accent} size={17} />
       </span>
       {!collapsed && (
-        <span className="text-[13px] font-medium truncate" style={{ color: theme.text }}>
+        <span className="text-[13px] font-medium truncate" style={{ color: active ? accent : theme.textSecondary }}>
           {name}
         </span>
       )}

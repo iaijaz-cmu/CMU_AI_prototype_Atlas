@@ -1,17 +1,21 @@
 import { useEffect, useState } from 'react';
 import { useAtlas } from '../lib/AtlasContext';
-import { AGENT_DEFS } from '../lib/data';
+import { AGENT_DEFS, ATLAS_HOME_COPY } from '../lib/data';
 import type { AgentId } from '../lib/types';
 import { fetchSlackMessages, type SlackMessage } from '../lib/api';
 import { AgentIllustrationCard } from './icons/AgentIllustration';
-import { IntegrationLogo } from './IntegrationLogo';
 import { FloatingChat } from './FloatingChat';
 import { ChatMessageList } from './ChatMessageList';
 import { ChatTypingIndicator } from './ChatTypingIndicator';
 import { useChatScroll } from './useChatScroll';
 import { HomeSideNav } from './HomeSideNav';
+import { HomeHeader } from './HomeHeader';
+import { HomePortfolioWidget } from './HomePortfolioWidget';
+import { HomeCompetitorSnapshotWidget } from './HomeCompetitorSnapshotWidget';
 import { HeaderAskDropdown } from './HeaderAskDropdown';
+import { HomeRecentConversationsWidget } from './HomeRecentConversationsWidget';
 import { theme } from '../lib/theme';
+import { conversationLabel } from '../lib/headerChat';
 
 const NAV_COLLAPSED_KEY = 'atlas-home-nav-collapsed';
 
@@ -43,46 +47,43 @@ export function Picker() {
     <div className="h-full flex overflow-hidden">
       <HomeSideNav collapsed={navCollapsed} onToggleCollapse={() => setNavCollapsed((c) => !c)} />
       <div className="flex-1 flex flex-col overflow-y-auto relative min-w-0">
-      <div className="flex items-center justify-end px-8 py-5">
-        <div className="flex items-center gap-2 text-[12.5px] text-n-text-2">
-          <span
-            className="w-[7px] h-[7px] rounded-full bg-emerald-500 inline-block"
-            style={{ animation: 'atlas-pulse 2s ease-in-out infinite' }}
-          />
-          v0.3 · Sprint 2
-        </div>
-      </div>
+      <HomeHeader />
 
-      <div className="flex-1 flex flex-col items-center justify-center px-6 pt-4 pb-16">
-        <div className="text-center mb-8 max-w-[560px]">
-          <div className="atlas-ai-badge mb-4.5">
-            RAG-powered · Evidence-grounded · Human-approved
-          </div>
-          <h1 className="font-inherit text-[44px] leading-tight font-semibold m-0 mb-3 tracking-[-0.02em] text-n-text">
-            Hello, Ifra<span style={{ color: theme.ai }}>.</span>
+      <div className="flex-1 flex flex-col px-6 sm:px-10 pt-2 pb-16 max-w-[1120px] w-full mx-auto">
+        <div className="mb-8 max-w-[640px]">
+          <h1 className="text-[clamp(2rem,4.5vw,2.75rem)] font-semibold leading-[1.1] m-0 mb-2 text-n-text tracking-tight">
+            {ATLAS_HOME_COPY.greeting.replace(/\.$/, '')}
+            <span className="text-n-accent">.</span>
           </h1>
-          <p className="text-n-text-2 text-[17px] leading-normal m-0">
-            Your workspace, your agents. Ask anything, or pick who you want working with you.
+          <p className="text-n-text-2 text-[17px] leading-relaxed m-0 max-w-[520px]">
+            {ATLAS_HOME_COPY.welcomeSubline}
           </p>
         </div>
 
         <AskCard />
 
-        <div className="grid gap-4 w-full max-w-[1040px]" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))' }}>
+        <HomeRecentConversationsWidget />
+
+        <div
+          className="grid gap-5 w-full mb-12"
+          style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))' }}
+        >
+          <HomePortfolioWidget />
+          <HomeCompetitorSnapshotWidget />
+        </div>
+
+        <h2 className="text-[13px] font-semibold uppercase tracking-wider text-n-text-muted m-0 mb-4">Agents</h2>
+        <div className="grid gap-5 w-full" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))' }}>
           {AGENT_DEFS.map((ag) => (
             <AgentCard key={ag.id} agentId={ag.id} />
           ))}
         </div>
 
-        <div className="flex items-center gap-0 mt-11 text-[13px] text-n-text-muted">
-          {STAT_STRIP.map((st, i) => (
-            <div
-              key={st.label}
-              className="px-5.5 text-center"
-              style={{ borderLeft: i === 0 ? 'none' : `1px solid ${theme.border}`, paddingLeft: i === 0 ? 0 : undefined }}
-            >
-              <p className="font-semibold text-n-text m-0 mb-0.5 text-[13.5px]">{st.label}</p>
-              <p className="m-0 text-[11.5px]">{st.sub}</p>
+        <div className="flex flex-wrap gap-8 mt-12 pt-8 border-t border-n-border/80">
+          {STAT_STRIP.map((st) => (
+            <div key={st.label}>
+              <p className="text-[20px] font-semibold text-n-text m-0 leading-none tabular-nums">{st.label.split(' ')[0]}</p>
+              <p className="text-[11px] text-n-text-muted m-0 mt-1">{st.sub}</p>
             </div>
           ))}
         </div>
@@ -99,35 +100,77 @@ function AskCard() {
     state,
     onHeaderDraftChange,
     sendHeaderChat,
-    activeHeaderMessages,
+    homeAskMessages,
+    clearHomeConversation,
   } = useAtlas();
-  const headerMessages = activeHeaderMessages();
-  const connected = state.integrations.filter((i) => i.status === 'connected');
-  const shown = connected.slice(0, 2);
-  const overflow = Math.max(0, connected.length - 2);
+  const headerMessages = homeAskMessages();
+  const expanded = state.homeActiveThreadKey !== null;
   const slackScoped = state.headerScopeApp === 'Slack';
   const gmailScoped = state.headerScopeApp === 'Gmail';
   const inputPlaceholder = gmailScoped
     ? 'Ask Atlas — then use Open in Gmail to draft an email with the answer…'
     : slackScoped
     ? 'Ask about your last Slack channel thread — follow-ups stay in this chat…'
-    : 'Ask or find anything from your workspace…';
+    : expanded
+      ? 'Continue the conversation…'
+      : 'Ask or find anything from your workspace…';
 
-  const hasThread = headerMessages.length > 0 || state.headerChatLoading;
+  const hasThread = expanded && (headerMessages.length > 0 || state.headerChatLoading);
   const { bottomRef, containerRef } = useChatScroll([
     headerMessages.length,
     state.headerChatLoading,
     headerMessages[headerMessages.length - 1]?.text,
+    state.homeActiveThreadKey,
   ]);
 
   return (
-    <div className="w-full max-w-[720px] mb-10 relative z-20">
-      <div className="atlas-card-elevated rounded-2xl flex flex-col">
+    <div className="w-full mb-6 relative z-30">
+      <div className="atlas-card-elevated flex flex-col overflow-visible">
+        {expanded && (
+          <div className="flex items-center justify-between gap-3 px-4 sm:px-5 py-3 border-b border-n-border bg-white/80 rounded-t-2xl shrink-0">
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold uppercase tracking-wide text-n-accent m-0 truncate">
+                {conversationLabel(state.homeActiveThreadKey!)}
+              </p>
+              <p className="text-[12px] font-medium text-n-text-2 m-0 truncate">Resume conversation</p>
+            </div>
+            <button
+              type="button"
+              onClick={clearHomeConversation}
+              className="shrink-0 w-9 h-9 rounded-lg border border-n-border bg-n-inset text-n-text-2 cursor-pointer flex items-center justify-center hover:bg-n-surface-2 transition-colors"
+              aria-label="Close conversation and start new chat"
+              title="Close and start new chat"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+                <path
+                  d="M3 3l8 8M11 3L3 11"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+          </div>
+        )}
+        {expanded && !hasThread && (
+          <div className="px-4 sm:px-5 py-4 border-b border-n-border bg-n-accent-soft/40">
+            <p className="text-[13px] font-semibold text-n-text m-0">Pick up where you left off</p>
+            <p className="text-[12px] text-n-text-2 m-0 mt-1 leading-relaxed">
+              Send a message below to continue this thread, or use the close button above to start fresh.
+            </p>
+          </div>
+        )}
         {hasThread && (
           <div
             ref={containerRef}
-            className="max-h-[min(52vh,440px)] overflow-y-auto px-4 sm:px-5 py-4 flex flex-col gap-4 bg-gradient-to-b from-n-inset to-white border-b border-n-border rounded-t-2xl"
+            className="max-h-[min(52vh,440px)] overflow-y-auto px-4 sm:px-5 py-4 flex flex-col gap-4 bg-gradient-to-b from-n-inset to-white border-b border-n-border"
           >
+            <div className="pb-1 border-b border-n-border/50">
+              <p className="text-[13px] font-semibold text-n-text m-0">Pick up where you left off</p>
+              <p className="text-[11px] text-n-text-muted m-0 mt-1">
+                {headerMessages.length} message{headerMessages.length === 1 ? '' : 's'} · reply below to continue
+              </p>
+            </div>
             <ChatMessageList
               messages={headerMessages}
               gmailCompact={!gmailScoped}
@@ -138,12 +181,7 @@ function AskCard() {
           </div>
         )}
 
-        {hasThread && (
-          <p className="text-[10px] text-n-text-muted text-center mt-2 mb-0 px-4">
-            Conversation saved in this browser · pick up below or open an agent workspace to continue there
-          </p>
-        )}
-        <div className="px-5.5 py-5 relative z-10 overflow-visible rounded-b-[22px]">
+        <div className="px-5.5 py-5 relative z-10 overflow-visible">
         <textarea
           value={state.headerDraft}
           onChange={(e) => onHeaderDraftChange(e.target.value)}
@@ -153,34 +191,26 @@ function AskCard() {
               sendHeaderChat();
             }
           }}
-          rows={hasThread ? 2 : 1}
+          rows={expanded ? 2 : 1}
           placeholder={inputPlaceholder}
           className="w-full box-border border-none outline-none text-[16px] text-n-text font-inherit mb-4 resize-none leading-relaxed min-h-[28px] bg-transparent"
         />
         {slackScoped && <SlackScopePreview />}
         <div className="flex items-center justify-between flex-wrap gap-2.5">
           <HeaderAskDropdown align="left" />
-          <div className="flex items-center gap-2.5 ml-auto">
-            <div className="flex items-center">
-              {shown.map((ic) => (
-                <IntegrationLogo key={ic.name} icon={ic.icon} bg={ic.bg} overlap />
-              ))}
-              {overflow > 0 && <span className="text-[11px] text-n-text-muted ml-1">+{overflow}</span>}
-            </div>
-            <button
-              type="button"
-              onClick={sendHeaderChat}
-              disabled={!state.headerDraft.trim() || state.headerChatLoading}
-              className="w-8 h-8 rounded-lg text-white border border-transparent cursor-pointer flex items-center justify-center text-sm font-medium"
-              style={{
-                background: theme.ai,
-                opacity: state.headerDraft.trim() && !state.headerChatLoading ? 1 : 0.45,
-              }}
-              aria-label="Send message"
-            >
-              ↑
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={sendHeaderChat}
+            disabled={!state.headerDraft.trim() || state.headerChatLoading}
+            className="w-9 h-9 rounded-full text-white border-none cursor-pointer flex items-center justify-center text-sm font-semibold shadow-md hover:opacity-90 transition-opacity ml-auto"
+            style={{
+              background: theme.accent,
+              opacity: state.headerDraft.trim() && !state.headerChatLoading ? 1 : 0.4,
+            }}
+            aria-label="Send message"
+          >
+            ↑
+          </button>
         </div>
         </div>
       </div>
@@ -233,39 +263,38 @@ function AgentCard({ agentId }: { agentId: AgentId }) {
       onClick={() => goAgent(agentId)}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      className="atlas-card rounded-2xl overflow-hidden cursor-pointer"
+      className="atlas-widget overflow-hidden cursor-pointer group"
       style={{
-        borderColor: hover ? def.accent : theme.border,
-        transform: hover ? 'translateY(-3px)' : 'none',
-        boxShadow: hover ? `0 10px 30px ${def.shadowColor}` : 'none',
-        transition: 'transform 0.18s, box-shadow 0.18s, border-color 0.18s',
+        transform: hover ? 'translateY(-4px)' : 'none',
+        boxShadow: hover ? theme.shadowLg : undefined,
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
         animation: 'atlas-fadein 0.4s ease-out',
       }}
     >
-      <div className="h-[160px] bg-n-inset flex items-center justify-center p-4 box-border border-b border-n-border">
+      <div
+        className="h-[140px] flex items-center justify-center p-4 box-border relative overflow-hidden"
+        style={{ background: `linear-gradient(145deg, ${def.accentBg} 0%, #fff 70%)` }}
+      >
         <AgentIllustrationCard agentId={agentId} />
       </div>
-      <div className="p-4.5">
-        <div className="flex items-center justify-between mb-1.5">
+      <div className="p-5">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[11px] font-bold uppercase tracking-widest text-n-text-muted">{def.name}</span>
           <span
-            className="text-[11px] font-bold tracking-[0.8px] uppercase"
-            style={{ color: def.accent }}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm opacity-0 group-hover:opacity-100 transition-opacity"
+            style={{ background: theme.accent }}
           >
-            {def.name}
-          </span>
-          <span style={{ color: def.accent }} className="text-sm">
             →
           </span>
         </div>
-        <p className="font-semibold text-sm m-0 mb-1.5 leading-snug text-n-text">{def.tagline}</p>
-        <p className="text-xs text-n-text-2 leading-normal m-0">{def.description}</p>
+        <p className="text-[16px] font-semibold m-0 mb-2 leading-snug text-n-text">{def.tagline}</p>
+        <p className="text-[12px] text-n-text-2 leading-relaxed m-0 mb-4">{def.description}</p>
       </div>
-      <div className="px-4.5 pb-4.5 grid gap-1.5" style={{ gridTemplateColumns: 'repeat(2,max-content)' }}>
-        {def.tools.slice(1).map((t) => (
+      <div className="px-5 pb-5 flex flex-wrap gap-2">
+        {def.tools.slice(1, 4).map((t) => (
           <span
             key={t.id}
-            className="text-[11.5px] font-medium px-3 py-1 rounded-full text-center"
-            style={{ border: `1px solid ${def.accent}35`, color: def.accent, background: def.accentBg }}
+            className="text-[10px] font-semibold px-3 py-1.5 rounded-full bg-n-bg text-n-text-2"
           >
             {t.label}
           </span>

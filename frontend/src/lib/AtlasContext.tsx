@@ -12,7 +12,13 @@ import type {
   HeaderThreadKey,
   Integration,
 } from './types';
-import { headerDisplayThreadKey, headerEffectiveAgent, headerSendThreadKey } from './headerChat';
+import {
+  headerDisplayThreadKey,
+  headerEffectiveAgent,
+  headerHomeSendThreadKey,
+  headerHomeThreadFromTag,
+  headerSendThreadKey,
+} from './headerChat';
 
 interface AtlasState {
   currentAgentId: AgentId | null;
@@ -31,6 +37,8 @@ interface AtlasState {
   headerChatLoading: boolean;
   chatMode: ChatMode;
   headerThreads: Record<HeaderThreadKey, HeaderMessage[]>;
+  /** Homepage: which saved thread is expanded in the ask card; null = compact bar only */
+  homeActiveThreadKey: HeaderThreadKey | null;
   chatMessages: ChatMessage[];
   prdPrompt: string;
   prdGenerating: boolean;
@@ -63,6 +71,7 @@ function initialState(): AtlasState {
     headerChatLoading: false,
     chatMode: 'ask',
     headerThreads: loadPersistedHeaderThreads(),
+    homeActiveThreadKey: null,
     chatMessages: [
       {
         role: 'assistant',
@@ -119,6 +128,8 @@ function useAtlasController() {
         headerOpenMenu: null,
         headerBarOpen: false,
         headerChatLoading: false,
+        homeActiveThreadKey: null,
+        chatTag: null,
         chatMode: 'ask',
         chatOpen: false,
       }),
@@ -136,7 +147,31 @@ function useAtlasController() {
   const toggleChat = useCallback(() => patch((s) => ({ chatOpen: !s.chatOpen })), [patch]);
   const onChatDraftChange = useCallback((v: string) => patch({ chatDraft: v }), [patch]);
   const setChatTag = useCallback(
-    (id: AgentId) => patch((s) => ({ chatTag: s.chatTag === id ? null : id })),
+    (id: AgentId) =>
+      patch((s) => {
+        const nextTag = s.chatTag === id ? null : id;
+        if (s.currentAgentId) {
+          return { chatTag: nextTag };
+        }
+        return {
+          chatTag: nextTag,
+          headerTargetAgent: nextTag,
+          homeActiveThreadKey: nextTag,
+        };
+      }),
+    [patch],
+  );
+
+  const appendHomeHeaderMessages = useCallback(
+    (threadKey: HeaderThreadKey, msgs: HeaderMessage[]) => {
+      if (msgs.length === 0) return;
+      patch((cur) => ({
+        headerThreads: {
+          ...cur.headerThreads,
+          [threadKey]: [...(cur.headerThreads[threadKey] ?? []), ...msgs],
+        },
+      }));
+    },
     [patch],
   );
 
@@ -144,26 +179,36 @@ function useAtlasController() {
     if (stateRef.current.chatLoading) return;
     const text = stateRef.current.chatDraft.trim();
     if (!text) return;
-    const tag = stateRef.current.chatTag;
+    const s0 = stateRef.current;
+    const tag = s0.chatTag;
+    const onHome = !s0.currentAgentId;
+    const homeThreadKey = headerHomeThreadFromTag(tag);
+    const now = Date.now();
     const userMsg: ChatMessage = { role: 'user', text, tag };
     patch((cur) => ({ chatMessages: [...cur.chatMessages, userMsg], chatDraft: '', chatLoading: true }));
+    if (onHome) {
+      appendHomeHeaderMessages(homeThreadKey, [
+        { role: 'user', text, agent: tag, at: now },
+      ]);
+    }
 
     generate({
       message: text,
       agent: tag,
-      history: stateRef.current.chatMessages
+      history: s0.chatMessages
         .filter((m) => m.role === 'user' || m.role === 'assistant')
         .slice(-10)
         .map((m) => ({ role: m.role, text: m.text })),
     })
       .then((result) => {
+        const assistantText = result.body;
         patch((cur) => ({
           chatLoading: false,
           chatMessages: [
             ...cur.chatMessages,
             {
               role: 'assistant',
-              text: result.body,
+              text: assistantText,
               title: result.title,
               tag,
               citations: result.citations,
@@ -172,14 +217,34 @@ function useAtlasController() {
             },
           ],
         }));
+        if (onHome) {
+          appendHomeHeaderMessages(homeThreadKey, [
+            {
+              role: 'assistant',
+              text: assistantText,
+              title: result.title,
+              agent: tag,
+              citations: result.citations,
+              confidence: result.confidence,
+              uncertaintyFlags: result.uncertaintyFlags,
+              at: Date.now(),
+            },
+          ]);
+        }
       })
       .catch((err: unknown) => {
+        const errText = `⚠️ ${errorMessage(err)}`;
         patch((cur) => ({
           chatLoading: false,
-          chatMessages: [...cur.chatMessages, { role: 'assistant', text: `⚠️ ${errorMessage(err)}`, tag }],
+          chatMessages: [...cur.chatMessages, { role: 'assistant', text: errText, tag }],
         }));
+        if (onHome) {
+          appendHomeHeaderMessages(homeThreadKey, [
+            { role: 'assistant', text: errText, agent: tag, at: Date.now() },
+          ]);
+        }
       });
-  }, [patch]);
+  }, [patch, appendHomeHeaderMessages]);
 
   const openAgentFromChat = useCallback(
     (id: AgentId) => patch({ chatOpen: false, currentAgentId: id, tool: 'dashboard', headerTargetAgent: id }),
@@ -207,7 +272,18 @@ function useAtlasController() {
   const closeHeaderMenus = useCallback(() => patch({ headerOpenMenu: null }), [patch]);
   const onHeaderDraftChange = useCallback((v: string) => patch({ headerDraft: v }), [patch]);
   const setHeaderTargetAgent = useCallback(
-    (id: AgentId | null) => patch({ headerTargetAgent: id, headerOpenMenu: null }),
+    (id: AgentId | null) =>
+      patch((s) => {
+        if (s.currentAgentId) {
+          return { headerTargetAgent: id, headerOpenMenu: null };
+        }
+        return {
+          headerTargetAgent: id,
+          homeActiveThreadKey: id,
+          chatTag: id,
+          headerOpenMenu: null,
+        };
+      }),
     [patch],
   );
 
@@ -215,7 +291,9 @@ function useAtlasController() {
     (name: string) =>
       patch((s) => {
         const next = s.headerScopeApp === name ? null : name;
-        const threadKey = headerSendThreadKey(s.currentAgentId, s.headerTargetAgent);
+        const threadKey = s.currentAgentId
+          ? headerSendThreadKey(s.currentAgentId, s.headerTargetAgent)
+          : headerHomeSendThreadKey(s.homeActiveThreadKey, s.headerTargetAgent);
         const scopeChanged = next !== s.headerScopeApp;
         return {
           headerScopeApp: next,
@@ -231,13 +309,67 @@ function useAtlasController() {
   const clearHeaderScope = useCallback(
     () =>
       patch((s) => {
-        const threadKey = headerSendThreadKey(s.currentAgentId, s.headerTargetAgent);
+        const threadKey = s.currentAgentId
+          ? headerSendThreadKey(s.currentAgentId, s.headerTargetAgent)
+          : headerHomeSendThreadKey(s.homeActiveThreadKey, s.headerTargetAgent);
         return {
           headerScopeApp: null,
           headerOpenMenu: null,
           headerThreads: { ...s.headerThreads, [threadKey]: [] },
         };
       }),
+    [patch],
+  );
+
+  const homeAskMessages = useCallback(() => {
+    const s = stateRef.current;
+    if (s.currentAgentId) return [];
+    const key = s.homeActiveThreadKey;
+    if (!key) return [];
+    return s.headerThreads[key] ?? [];
+  }, []);
+
+  const selectHomeConversation = useCallback(
+    (key: HeaderThreadKey) =>
+      patch({
+        homeActiveThreadKey: key,
+        headerDraft: '',
+        headerTargetAgent: key === 'home' ? null : key,
+        chatTag: key === 'home' ? null : key,
+        headerOpenMenu: null,
+      }),
+    [patch],
+  );
+
+  const clearHomeConversation = useCallback(
+    () =>
+      patch({
+        homeActiveThreadKey: null,
+        headerDraft: '',
+        headerTargetAgent: null,
+        headerScopeApp: null,
+        chatTag: null,
+        headerOpenMenu: null,
+      }),
+    [patch],
+  );
+
+  const startNewAgentChat = useCallback(
+    (agentId: AgentId) =>
+      patch((s) => ({
+        headerThreads: { ...s.headerThreads, [agentId]: [] },
+        headerDraft: '',
+        headerChatLoading: false,
+        headerOpenMenu: null,
+        inlineChatOpen: true,
+        headerBarOpen: false,
+        headerTargetAgent: agentId,
+        chatTag: agentId,
+        homeActiveThreadKey:
+          s.currentAgentId === null && (s.homeActiveThreadKey === agentId || s.headerTargetAgent === agentId)
+            ? null
+            : s.homeActiveThreadKey,
+      })),
     [patch],
   );
 
@@ -254,11 +386,22 @@ function useAtlasController() {
     const s0 = stateRef.current;
     const scope = s0.headerScopeApp;
     const agent = headerEffectiveAgent(s0.currentAgentId, s0.headerTargetAgent);
-    const threadKey = headerSendThreadKey(s0.currentAgentId, s0.headerTargetAgent);
+    const onHome = !s0.currentAgentId;
+    const threadKey = s0.currentAgentId
+      ? headerSendThreadKey(s0.currentAgentId, s0.headerTargetAgent)
+      : headerHomeSendThreadKey(s0.homeActiveThreadKey, s0.headerTargetAgent);
     const prior = s0.headerThreads[threadKey] ?? [];
-    const userMsg: HeaderMessage = { role: 'user', text, scope, agent };
+    const now = Date.now();
+    const userMsg: HeaderMessage = { role: 'user', text, scope, agent, at: now };
 
     patch((cur) => ({
+      ...(onHome
+        ? {
+            homeActiveThreadKey: threadKey,
+            headerTargetAgent: threadKey === 'home' ? null : threadKey,
+            chatTag: threadKey === 'home' ? null : threadKey,
+          }
+        : {}),
       headerThreads: { ...cur.headerThreads, [threadKey]: [...(cur.headerThreads[threadKey] ?? []), userMsg] },
       headerDraft: '',
       headerChatLoading: true,
@@ -284,6 +427,7 @@ function useAtlasController() {
                 citations: result.citations,
                 confidence: result.confidence,
                 uncertaintyFlags: result.uncertaintyFlags,
+                at: Date.now(),
               },
             ],
           },
@@ -297,7 +441,10 @@ function useAtlasController() {
           headerChatLoading: false,
           headerThreads: {
             ...cur.headerThreads,
-            [threadKey]: [...thread, { role: 'assistant', text: `⚠️ ${errorMessage(err)}`, scope, agent }],
+            [threadKey]: [
+              ...thread,
+              { role: 'assistant', text: `⚠️ ${errorMessage(err)}`, scope, agent, at: Date.now() },
+            ],
           },
         };
       });
@@ -384,6 +531,7 @@ function useAtlasController() {
     toggleHeaderBar,
     openInlineChat,
     closeInlineChat,
+    startNewAgentChat,
     setChatMode,
     toggleHeaderAgentMenu,
     toggleHeaderScopeMenu,
@@ -393,6 +541,9 @@ function useAtlasController() {
     clearHeaderScope,
     setHeaderTargetAgent,
     activeHeaderMessages,
+    homeAskMessages,
+    selectHomeConversation,
+    clearHomeConversation,
     sendHeaderChat,
     toggleIntegration,
     onPrdPromptChange,

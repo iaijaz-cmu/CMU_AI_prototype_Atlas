@@ -43,7 +43,10 @@ THEME_KEYWORDS = {
     "ai_features":        ["ai", "assistant", "summarize", "intelligent", "smart", "standup", "brief"],
     "financial_tracking": ["withdrawal", "finance", "dashboard", "reconcil", "balance", "categoriz"],
     "growth":             ["referral", "growth", "viral", "invite", "attribution", "reward"],
-    "competitor":         ["competitor", "compare", "competitive", "vs "],
+    "competitor":         ["competitor", "compare", "competitive", "vs ", "battle", "alternative"],
+    "architecture":       ["adr", "architecture", "decision record", "tradeoff", "trade-off", "rfc", "technical spec", "system design"],
+    "sales_motion":       ["pitch", "sales", "deal", "executive", "exec", "renewal", "procurement", "champion", "win loss"],
+    "marketing":            ["marketing", "strategy", "positioning", "campaign", "gtm", "go-to-market", "messaging", "brand"],
 }
 
 
@@ -53,16 +56,35 @@ def detect_themes(query: str) -> list[str]:
     return matched or list(THEME_KEYWORDS.keys())
 
 
-def retrieve_context(query: str) -> dict:
+def retrieve_context(query: str, agent: str | None = None) -> dict:
     kb = load_kb()
     themes = detect_themes(query)
+    q = query.lower()
+    if agent == "engineering" and "architecture" not in themes:
+        if any(k in q for k in ["adr", "architecture", "decision", "spec", "technical"]):
+            themes = list(dict.fromkeys(themes + ["architecture"]))
+    if agent in ("market", "sales"):
+        themes = list(dict.fromkeys(themes + ["competitor"]))
+    if agent == "sales" and "sales_motion" not in themes:
+        themes.append("sales_motion")
+    if agent == "market" and "marketing" not in themes:
+        if any(k in q for k in ["marketing", "strategy", "position", "gtm", "campaign"]):
+            themes.append("marketing")
+
+    include_competitors = "competitor" in themes or agent in ("market", "sales")
     ctx = {
         "customer_feedback": [c for c in kb["customer_feedback"] if c["theme"] in themes][:5],
         "jira_tickets": [j for j in kb["jira_tickets"] if j["theme"] in themes][:5],
         "historical_prds": [p for p in kb["historical_prds"] if p["theme"] in themes][:3],
-        "competitor_intel": kb["competitor_intel"] if "competitor" in themes else [],
+        "competitor_intel": kb["competitor_intel"] if include_competitors else [],
         "roadmap_context": kb["roadmap_context"],
     }
+    if agent == "sales" and len(ctx["customer_feedback"]) < 3:
+        extra = [c for c in kb["customer_feedback"] if c not in ctx["customer_feedback"]][: 5 - len(ctx["customer_feedback"])]
+        ctx["customer_feedback"] = ctx["customer_feedback"] + extra
+    if agent == "product" and ("roadmap" in q or "prd" in q):
+        if len(ctx["historical_prds"]) < 2:
+            ctx["historical_prds"] = kb["historical_prds"][:3]
     return ctx
 
 
@@ -137,11 +159,15 @@ def generate_response(
     user_input: str,
     api_key: str,
     history: list[dict[str, str]] | None = None,
+    agent: str | None = None,
 ) -> tuple[str, dict]:
+    from agent_prompts import resolve_system_prompt
+
     client = OpenAI(api_key=api_key)
-    ctx = retrieve_context(user_input)
+    ctx = retrieve_context(user_input, agent)
     context_str = format_context(ctx)
-    messages: list[dict[str, str]] = [{"role": "system", "content": SYSTEM_PROMPT}]
+    system = resolve_system_prompt(agent)
+    messages: list[dict[str, str]] = [{"role": "system", "content": system}]
     for turn in (history or [])[-10:]:
         role = turn.get("role")
         text = (turn.get("text") or "").strip()

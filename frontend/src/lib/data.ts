@@ -11,6 +11,7 @@ import type {
   Integration,
   JiraStory,
   KnowledgeSource,
+  PortfolioProject,
   RoadmapItem,
   Signal,
   Stat,
@@ -25,6 +26,32 @@ import type {
   IcpStatus,
 } from './types';
 import { agentAccents } from './theme';
+
+/** Homepage hero copy */
+export const ATLAS_HOME_COPY = {
+  greeting: 'Hello, Ifra.',
+  welcomeSubline: 'Welcome to your multi-agent workspace.',
+};
+
+/** Example prompts shown in each agent workspace chat */
+export const AGENT_CHAT_EXAMPLES: Record<AgentId, { placeholder: string; hint: string }> = {
+  product: {
+    placeholder: 'Generate a PRD using our roadmap priorities (e.g. notification center, onboarding)…',
+    hint: 'Try: “Write a PRD for the 2026 roadmap theme: AI assistant pilot”',
+  },
+  engineering: {
+    placeholder: 'Draft an ADR or technical spec for a system decision…',
+    hint: 'Try: “ADR for vector DB selection for the Atlas RAG layer”',
+  },
+  market: {
+    placeholder: 'Competitor analysis, positioning, or marketing strategy…',
+    hint: 'Try: “Marketing strategy to win enterprise vs Competitor A and B”',
+  },
+  sales: {
+    placeholder: 'Executive pitch — trends, proof points, why we win…',
+    hint: 'Try: “Sales pitch to execs on why our product beats alternatives this quarter”',
+  },
+};
 
 export const AGENT_DEFS: AgentDef[] = [
   {
@@ -171,6 +198,59 @@ export const PRD_EXAMPLES = [
   'AI standup summarizer',
   'Dark mode rollout',
   'Referral program v2',
+];
+
+export const PORTFOLIO_PROJECTS: PortfolioProject[] = [
+  {
+    id: 'p1',
+    name: 'Unified notification controls',
+    status: 'Active',
+    lead: 'Product',
+    agentId: 'product',
+    toolId: 'prd',
+    progress: 72,
+    updatedLabel: 'PRD v2 · 2h ago',
+  },
+  {
+    id: 'p2',
+    name: 'Notification settings API',
+    status: 'Active',
+    lead: 'Engineering',
+    agentId: 'engineering',
+    toolId: 'techspec',
+    progress: 48,
+    updatedLabel: 'Tech spec draft · yesterday',
+  },
+  {
+    id: 'p3',
+    name: 'AI-PM competitive pulse',
+    status: 'Discovery',
+    lead: 'Market',
+    agentId: 'market',
+    toolId: 'competitive',
+    progress: 35,
+    updatedLabel: 'Watchlist refresh · today',
+  },
+  {
+    id: 'p4',
+    name: 'Acme renewal ($240K)',
+    status: 'Active',
+    lead: 'Sales',
+    agentId: 'sales',
+    toolId: 'dealbrief',
+    progress: 61,
+    updatedLabel: 'Deal brief · 1h ago',
+  },
+  {
+    id: 'p5',
+    name: 'Referral program v2',
+    status: 'Paused',
+    lead: 'Product',
+    agentId: 'product',
+    toolId: 'roadmap',
+    progress: 18,
+    updatedLabel: 'Roadmap Q2 · last week',
+  },
 ];
 
 export const PRD_STEP_LABELS = [

@@ -1,5 +1,18 @@
 export type AgentId = 'product' | 'engineering' | 'market' | 'sales';
 
+export type PortfolioProjectStatus = 'Active' | 'Discovery' | 'Shipped' | 'Paused';
+
+export interface PortfolioProject {
+  id: string;
+  name: string;
+  status: PortfolioProjectStatus;
+  lead: string;
+  agentId: AgentId;
+  toolId: string;
+  progress: number;
+  updatedLabel: string;
+}
+
 export type ToolIcon =
   | 'grid'
   | 'doc'
@@ -221,6 +234,8 @@ export interface HeaderMessage {
   citations?: Citation[];
   confidence?: Confidence | null;
   uncertaintyFlags?: string | null;
+  /** Unix ms — used to sort recent conversations on the homepage */
+  at?: number;
 }
 
 export type HeaderThreadKey = AgentId | 'home';

@@ -9,7 +9,7 @@ interface Props {
 }
 
 export function AgentChatResumeWidget({ agentId, accent, accentBg }: Props) {
-  const { state, openInlineChat, onHeaderDraftChange } = useAtlas();
+  const { state, openInlineChat, startNewAgentChat, onHeaderDraftChange } = useAtlas();
   const def = AGENT_DEFS.find((a) => a.id === agentId)!;
   const thread = state.headerThreads[agentId] ?? [];
   const lastUser = [...thread].reverse().find((m) => m.role === 'user');
@@ -51,14 +51,23 @@ export function AgentChatResumeWidget({ agentId, accent, accentBg }: Props) {
             {thread.length} message{thread.length === 1 ? '' : 's'} with {def.name} Agent · saved in this browser
           </p>
         </div>
-        <button
-          type="button"
-          onClick={openInlineChat}
-          className="text-[12px] font-bold px-3 py-2 rounded-lg cursor-pointer border-none text-white shrink-0"
-          style={{ background: accent }}
-        >
-          Continue chat
-        </button>
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={openInlineChat}
+            className="text-[12px] font-bold px-3 py-2 rounded-lg cursor-pointer border-none text-white"
+            style={{ background: accent }}
+          >
+            Continue chat
+          </button>
+          <button
+            type="button"
+            onClick={() => startNewAgentChat(agentId)}
+            className="text-[12px] font-semibold px-3 py-2 rounded-lg cursor-pointer bg-white border border-[#E4E2DC] text-[#57534E] hover:bg-[#FAFAF8]"
+          >
+            Start new chat
+          </button>
+        </div>
       </div>
 
       <div className="rounded-xl p-3.5 max-h-[200px] overflow-y-auto flex flex-col gap-2.5" style={{ background: accentBg }}>

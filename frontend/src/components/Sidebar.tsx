@@ -10,15 +10,15 @@ export function Sidebar() {
   const otherAgentDots = AGENT_DEFS.filter((a) => a.id !== def.id).map((a) => a.accent);
 
   return (
-    <div className="w-[220px] shrink-0 atlas-nav-rail flex flex-col">
+    <div className="w-[220px] shrink-0 atlas-nav-rail flex flex-col relative z-10">
       <button
         type="button"
         onClick={goPicker}
-        className="flex items-center gap-2.5 p-4 border-b border-[#E9E9E7] cursor-pointer hover:bg-[#F1F1EF] w-full text-left border-none bg-transparent"
+        className="flex items-center gap-2.5 p-4 border-b border-n-border/60 cursor-pointer hover:bg-n-surface-2 w-full text-left border-none bg-white/40"
       >
         <AtlasMark size={28} variant="ai" />
         <div className="min-w-0">
-          <p className="text-[13px] font-semibold m-0 leading-tight text-[#37352F]">Atlas</p>
+          <p className="text-[13px] font-semibold m-0 leading-tight text-n-text">Atlas</p>
           <p className="text-[11px] mt-0.5 mb-0 font-medium" style={{ color: def.accent }}>
             {def.name}
           </p>
@@ -49,11 +49,11 @@ export function Sidebar() {
         })}
       </div>
 
-      <div className="p-2.5 border-t border-[#E9E9E7]">
+      <div className="p-2.5 border-t border-n-border/60 bg-white/30">
         <button
           type="button"
           onClick={goPicker}
-          className="flex items-center gap-2 px-2.5 py-2 atlas-nav-item cursor-pointer text-[12px] text-[#787774] border-none bg-transparent w-full"
+          className="flex items-center gap-2 px-2.5 py-2 atlas-nav-item cursor-pointer text-[12px] text-n-text-2 border-none bg-transparent w-full"
         >
           <div className="flex gap-1">
             {otherAgentDots.map((dot, i) => (
