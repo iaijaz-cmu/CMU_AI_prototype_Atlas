@@ -20,9 +20,13 @@ import {
   headerSendThreadKey,
 } from './headerChat';
 
+export type HomeNav = 'home' | 'integrations';
+
 interface AtlasState {
   currentAgentId: AgentId | null;
   tool: string;
+  /** Homepage side nav: overview vs integrations (only when currentAgentId is null) */
+  homeNav: HomeNav;
   integrations: Integration[];
   chatOpen: boolean;
   chatDraft: string;
@@ -57,6 +61,7 @@ function initialState(): AtlasState {
   return {
     currentAgentId: null,
     tool: 'dashboard',
+    homeNav: 'home',
     integrations: INTEGRATIONS.map((i) => ({ ...i })),
     chatOpen: false,
     chatDraft: '',
@@ -99,6 +104,13 @@ function errorMessage(err: unknown): string {
   return String(err);
 }
 
+function resolveHeaderThreadKey(s: AtlasState): HeaderThreadKey {
+  if (s.currentAgentId) {
+    return headerSendThreadKey(s.currentAgentId, s.headerTargetAgent);
+  }
+  return headerHomeSendThreadKey(s.homeActiveThreadKey, s.headerTargetAgent);
+}
+
 function useAtlasController() {
   const [state, setState] = useState<AtlasState>(initialState);
   const prdIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -132,11 +144,23 @@ function useAtlasController() {
         chatTag: null,
         chatMode: 'ask',
         chatOpen: false,
+        homeNav: 'home',
+      }),
+    [patch],
+  );
+  const openHomeIntegrations = useCallback(
+    () =>
+      patch({
+        currentAgentId: null,
+        homeNav: 'integrations',
+        inlineChatOpen: false,
+        headerOpenMenu: null,
+        headerBarOpen: false,
       }),
     [patch],
   );
   const goAgent = useCallback(
-    (id: AgentId) => patch({ currentAgentId: id, tool: 'dashboard', headerTargetAgent: id }),
+    (id: AgentId) => patch({ currentAgentId: id, tool: 'dashboard', headerTargetAgent: id, homeNav: 'home' }),
     [patch],
   );
   const goTool = useCallback(
@@ -354,6 +378,27 @@ function useAtlasController() {
     [patch],
   );
 
+  const deleteHomeConversationThread = useCallback(
+    (key: HeaderThreadKey) =>
+      patch((s) => {
+        const clearingActive = s.homeActiveThreadKey === key;
+        return {
+          headerThreads: { ...s.headerThreads, [key]: [] },
+          ...(clearingActive
+            ? {
+                homeActiveThreadKey: null,
+                headerDraft: '',
+                headerTargetAgent: null,
+                headerScopeApp: null,
+                chatTag: null,
+                headerOpenMenu: null,
+              }
+            : {}),
+        };
+      }),
+    [patch],
+  );
+
   const startNewAgentChat = useCallback(
     (agentId: AgentId) =>
       patch((s) => ({
@@ -387,9 +432,7 @@ function useAtlasController() {
     const scope = s0.headerScopeApp;
     const agent = headerEffectiveAgent(s0.currentAgentId, s0.headerTargetAgent);
     const onHome = !s0.currentAgentId;
-    const threadKey = s0.currentAgentId
-      ? headerSendThreadKey(s0.currentAgentId, s0.headerTargetAgent)
-      : headerHomeSendThreadKey(s0.homeActiveThreadKey, s0.headerTargetAgent);
+    const threadKey = resolveHeaderThreadKey(s0);
     const prior = s0.headerThreads[threadKey] ?? [];
     const now = Date.now();
     const userMsg: HeaderMessage = { role: 'user', text, scope, agent, at: now };
@@ -458,6 +501,132 @@ function useAtlasController() {
     generate({ message: text, agent, scope, history }).then(finish).catch(fail);
   }, [patch]);
 
+  const editHeaderUserMessage = useCallback(
+    (messageIndex: number, newText: string, threadKeyOverride?: HeaderThreadKey) => {
+      const trimmed = newText.trim();
+      if (!trimmed || stateRef.current.headerChatLoading) return;
+      const s0 = stateRef.current;
+      const threadKey = threadKeyOverride ?? resolveHeaderThreadKey(s0);
+      const thread = s0.headerThreads[threadKey] ?? [];
+      const existing = thread[messageIndex];
+      if (!existing || existing.role !== 'user') return;
+
+      const scope = existing.scope ?? s0.headerScopeApp;
+      const agent = existing.agent ?? headerEffectiveAgent(s0.currentAgentId, s0.headerTargetAgent);
+      const truncated = thread.slice(0, messageIndex);
+      const userMsg: HeaderMessage = { role: 'user', text: trimmed, scope, agent, at: Date.now() };
+
+      patch((cur) => ({
+        headerThreads: {
+          ...cur.headerThreads,
+          [threadKey]: [...truncated, userMsg],
+        },
+        headerChatLoading: true,
+      }));
+
+      const history = truncated.map((m) => ({ role: m.role, text: m.text }));
+
+      const finish = (result: GenerateResult) => {
+        patch((cur) => {
+          const base = (cur.headerThreads[threadKey] ?? []).slice(0, messageIndex + 1);
+          return {
+            headerChatLoading: false,
+            headerThreads: {
+              ...cur.headerThreads,
+              [threadKey]: [
+                ...base,
+                {
+                  role: 'assistant',
+                  text: result.body,
+                  title: result.title,
+                  scope,
+                  agent,
+                  citations: result.citations,
+                  confidence: result.confidence,
+                  uncertaintyFlags: result.uncertaintyFlags,
+                  at: Date.now(),
+                },
+              ],
+            },
+          };
+        });
+      };
+      const fail = (err: unknown) => {
+        patch((cur) => {
+          const base = (cur.headerThreads[threadKey] ?? []).slice(0, messageIndex + 1);
+          return {
+            headerChatLoading: false,
+            headerThreads: {
+              ...cur.headerThreads,
+              [threadKey]: [
+                ...base,
+                { role: 'assistant', text: `⚠️ ${errorMessage(err)}`, scope, agent, at: Date.now() },
+              ],
+            },
+          };
+        });
+      };
+
+      if (scope === 'Slack') {
+        slackRespond(trimmed, false, history).then(finish).catch(fail);
+        return;
+      }
+      generate({ message: trimmed, agent, scope, history }).then(finish).catch(fail);
+    },
+    [patch],
+  );
+
+  const editFloatingChatUserMessage = useCallback(
+    (messageIndex: number, newText: string) => {
+      const trimmed = newText.trim();
+      if (!trimmed || stateRef.current.chatLoading) return;
+      const s0 = stateRef.current;
+      const messages = s0.chatMessages;
+      const existing = messages[messageIndex];
+      if (!existing || existing.role !== 'user') return;
+
+      const tag = existing.tag ?? s0.chatTag;
+      const truncated = messages.slice(0, messageIndex);
+      const userMsg: ChatMessage = { role: 'user', text: trimmed, tag };
+
+      patch({ chatMessages: [...truncated, userMsg], chatLoading: true });
+
+      const history = truncated
+        .filter((m) => m.role === 'user' || m.role === 'assistant')
+        .slice(-10)
+        .map((m) => ({ role: m.role, text: m.text }));
+
+      generate({ message: trimmed, agent: tag, history })
+        .then((result) => {
+          patch((cur) => ({
+            chatLoading: false,
+            chatMessages: [
+              ...cur.chatMessages.slice(0, messageIndex + 1),
+              {
+                role: 'assistant',
+                text: result.body,
+                title: result.title,
+                tag,
+                citations: result.citations,
+                confidence: result.confidence,
+                uncertaintyFlags: result.uncertaintyFlags,
+              },
+            ],
+          }));
+        })
+        .catch((err: unknown) => {
+          patch((cur) => ({
+            chatLoading: false,
+            chatMessages: [
+              ...cur.chatMessages.slice(0, messageIndex + 1),
+              { role: 'assistant', text: `⚠️ ${errorMessage(err)}`, tag },
+            ],
+          }));
+        });
+    },
+    [patch],
+  );
+
   const toggleIntegration = useCallback(
     (name: string) =>
       patch((s) => ({
@@ -467,6 +636,31 @@ function useAtlasController() {
             : i,
         ),
       })),
+    [patch],
+  );
+
+  const addCustomIntegration = useCallback(
+    (name: string) => {
+      const trimmed = name.trim();
+      if (!trimmed) return false;
+      const s = stateRef.current;
+      if (s.integrations.some((i) => i.name.toLowerCase() === trimmed.toLowerCase())) return false;
+      patch({
+        integrations: [
+          ...s.integrations,
+          {
+            name: trimmed,
+            icon: 'drive',
+            desc: 'Custom connector — configure credentials in workspace settings',
+            color: '#5C6472',
+            bg: '#F4F4F6',
+            status: 'not_connected',
+            lastSync: null,
+          },
+        ],
+      });
+      return true;
+    },
     [patch],
   );
 
@@ -521,6 +715,7 @@ function useAtlasController() {
   return {
     state,
     goPicker,
+    openHomeIntegrations,
     goAgent,
     goTool,
     toggleChat,
@@ -544,8 +739,12 @@ function useAtlasController() {
     homeAskMessages,
     selectHomeConversation,
     clearHomeConversation,
+    deleteHomeConversationThread,
     sendHeaderChat,
+    editHeaderUserMessage,
+    editFloatingChatUserMessage,
     toggleIntegration,
+    addCustomIntegration,
     onPrdPromptChange,
     quickFillPrd,
     runPrd,

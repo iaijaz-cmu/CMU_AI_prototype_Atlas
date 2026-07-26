@@ -1,12 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useAtlas } from '../lib/AtlasContext';
-import { AtlasApiError, fetchCompetitorMetrics, type ResolvedCompanyMetrics } from '../lib/api';
+import { AtlasApiError, fetchCompetitorMetrics, type G2Metric, type ResolvedCompanyMetrics } from '../lib/api';
+import { CompetitorBrandMark } from './CompetitorBrandMark';
 import { theme } from '../lib/theme';
 
 function fmtPct(n: number | null | undefined, digits = 1) {
   if (n == null || Number.isNaN(n)) return '—';
   const sign = n > 0 ? '+' : '';
   return `${sign}${n.toFixed(digits)}%`;
+}
+
+function fmtG2(g2: G2Metric | null | undefined) {
+  if (g2?.score == null || Number.isNaN(g2.score)) return '—';
+  return `${g2.score.toFixed(1)}/${g2.maxScore ?? 5}`;
 }
 
 function MiniSparkline({ positive }: { positive: boolean | null }) {
@@ -30,9 +36,7 @@ function CompanyRow({ c }: { c: ResolvedCompanyMetrics }) {
 
   return (
     <div className="flex items-center gap-3 p-3 rounded-2xl bg-n-inset/60 hover:bg-white border border-transparent hover:border-n-border/80 transition-all">
-      <span className="w-10 h-10 rounded-xl bg-n-accent-soft text-n-accent flex items-center justify-center text-[13px] font-semibold shrink-0 border border-[rgba(227,107,82,0.15)]">
-        {c.name.slice(0, 1)}
-      </span>
+      <CompetitorBrandMark companyId={c.id} name={c.name} size={40} />
       <div className="flex-1 min-w-0">
         <p className="text-[13px] font-semibold text-n-text m-0 truncate">{c.name}</p>
         <p className="text-[10px] text-n-text-muted m-0">
@@ -50,9 +54,21 @@ function CompanyRow({ c }: { c: ResolvedCompanyMetrics }) {
           {fmtPct(change)}
         </p>
       </div>
-      <div className="text-right shrink-0 min-w-[44px] hidden sm:block">
-        <p className="text-[9px] uppercase tracking-wider text-n-text-muted m-0 mb-0.5">News</p>
-        <p className="text-[13px] font-bold tabular-nums text-n-text m-0">{c.news?.count7d ?? '—'}</p>
+      <div className="text-right shrink-0 min-w-[52px]">
+        <p className="text-[9px] uppercase tracking-wider text-n-text-muted m-0 mb-0.5">G2</p>
+        {c.g2?.url ? (
+          <a
+            href={c.g2.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[13px] font-bold tabular-nums text-n-text m-0 hover:text-n-accent"
+            title="View on G2"
+          >
+            {fmtG2(c.g2)}
+          </a>
+        ) : (
+          <p className="text-[13px] font-bold tabular-nums text-n-text m-0">{fmtG2(c.g2)}</p>
+        )}
       </div>
     </div>
   );
@@ -97,7 +113,7 @@ export function HomeCompetitorSnapshotWidget() {
       <div className="px-5 pt-5 pb-4 border-b border-n-border/60 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="text-[15px] font-semibold text-n-text m-0 tracking-tight truncate">Competitors</h2>
-          <p className="text-[11px] text-n-text-muted m-0 mt-1">Market pulse · live data</p>
+          <p className="text-[11px] text-n-text-muted m-0 mt-1">Live G2 ratings · stock pulse</p>
         </div>
         <button
           type="button"

@@ -16,6 +16,7 @@ export function InlineAgentChat({ onClose }: Props) {
     onHeaderDraftChange,
     sendHeaderChat,
     activeHeaderMessages,
+    editHeaderUserMessage,
   } = useAtlas();
 
   const def = AGENT_DEFS.find((a) => a.id === state.currentAgentId) ?? AGENT_DEFS[0];
@@ -78,6 +79,9 @@ export function InlineAgentChat({ onClose }: Props) {
             citationAccent={def.accent}
             gmailCompact={!gmailScoped}
             showGmail
+            editableUserMessages
+            editDisabled={state.headerChatLoading}
+            onEditUserMessage={editHeaderUserMessage}
           />
           {state.headerChatLoading && <ChatTypingIndicator />}
           <div ref={bottomRef} className="h-px shrink-0" aria-hidden />

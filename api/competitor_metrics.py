@@ -12,6 +12,7 @@ from typing import Any, Literal
 import httpx
 
 import news_integration
+import g2_integration
 
 _HERE = os.path.dirname(__file__)
 CONFIG_PATH = os.path.join(_HERE, "competitor_config.json")
@@ -24,6 +25,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
             "id": "google",
             "name": "Google",
             "ticker": "GOOGL",
+            "g2Slug": "google-workspace",
             "newsQuery": "Google Gemini AI workspace",
             "metricTypes": ["stock", "earnings", "news_7d"],
             "customMetrics": [],
@@ -32,14 +34,16 @@ DEFAULT_CONFIG: dict[str, Any] = {
             "id": "notion_ai",
             "name": "Notion AI",
             "ticker": "",
+            "g2Slug": "notion",
             "newsQuery": "Notion AI assistant",
             "metricTypes": ["news_7d"],
-            "customMetrics": [{"id": "g2", "label": "G2 score (manual)", "value": "4.7", "unit": "/5"}],
+            "customMetrics": [],
         },
         {
             "id": "perplexity",
             "name": "Perplexity",
             "ticker": "",
+            "g2Slug": "perplexity",
             "newsQuery": "Perplexity AI enterprise",
             "metricTypes": ["news_7d"],
             "customMetrics": [],
@@ -48,6 +52,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
             "id": "granola",
             "name": "Granola",
             "ticker": "",
+            "g2Slug": "granola",
             "newsQuery": "Granola AI meeting notes",
             "metricTypes": ["news_7d"],
             "customMetrics": [],
@@ -56,6 +61,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
             "id": "dovetail",
             "name": "Dovetail",
             "ticker": "",
+            "g2Slug": "dovetail-research-pty-ltd-dovetail",
             "newsQuery": "Dovetail research AI UX",
             "metricTypes": ["news_7d"],
             "customMetrics": [],
@@ -246,6 +252,7 @@ def resolve_company(company: dict[str, Any], news_limit: int = 6) -> dict[str, A
         "marketTickerIsProxy": bool(not (company.get("ticker") or "").strip() and market_ticker(company)),
         "newsQuery": company.get("newsQuery") or company["name"],
         "customMetrics": company.get("customMetrics") or [],
+        "g2": None,
         "stock": None,
         "earnings": None,
         "news": None,
@@ -272,6 +279,11 @@ def resolve_company(company: dict[str, Any], news_limit: int = 6) -> dict[str, A
             resolved["latestHeadline"] = headlines[0] if headlines else None
         except Exception as e:
             resolved["errors"].append(f"News: {e}")
+
+    try:
+        resolved["g2"] = g2_integration.resolve_g2_for_company(company)
+    except Exception as e:
+        resolved["errors"].append(f"G2: {e}")
 
     return resolved
 

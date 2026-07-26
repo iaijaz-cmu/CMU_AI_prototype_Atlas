@@ -14,8 +14,9 @@ import { HomePortfolioWidget } from './HomePortfolioWidget';
 import { HomeCompetitorSnapshotWidget } from './HomeCompetitorSnapshotWidget';
 import { HeaderAskDropdown } from './HeaderAskDropdown';
 import { HomeRecentConversationsWidget } from './HomeRecentConversationsWidget';
+import { Integrations } from './views/Integrations';
 import { theme } from '../lib/theme';
-import { conversationLabel } from '../lib/headerChat';
+import { conversationLabel, headerHomeSendThreadKey } from '../lib/headerChat';
 
 const NAV_COLLAPSED_KEY = 'atlas-home-nav-collapsed';
 
@@ -27,6 +28,8 @@ const STAT_STRIP = [
 ];
 
 export function Picker() {
+  const { state } = useAtlas();
+  const showIntegrations = state.homeNav === 'integrations';
   const [navCollapsed, setNavCollapsed] = useState(() => {
     try {
       return localStorage.getItem(NAV_COLLAPSED_KEY) === '1';
@@ -49,6 +52,11 @@ export function Picker() {
       <div className="flex-1 flex flex-col overflow-y-auto relative min-w-0">
       <HomeHeader />
 
+      {showIntegrations ? (
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <Integrations />
+        </div>
+      ) : (
       <div className="flex-1 flex flex-col px-6 sm:px-10 pt-2 pb-16 max-w-[1120px] w-full mx-auto">
         <div className="mb-8 max-w-[640px]">
           <h1 className="text-[clamp(2rem,4.5vw,2.75rem)] font-semibold leading-[1.1] m-0 mb-2 text-n-text tracking-tight">
@@ -88,8 +96,9 @@ export function Picker() {
           ))}
         </div>
       </div>
+      )}
 
-      <FloatingChat />
+      {!showIntegrations && <FloatingChat />}
       </div>
     </div>
   );
@@ -102,6 +111,7 @@ function AskCard() {
     sendHeaderChat,
     homeAskMessages,
     clearHomeConversation,
+    editHeaderUserMessage,
   } = useAtlas();
   const headerMessages = homeAskMessages();
   const expanded = state.homeActiveThreadKey !== null;
@@ -175,6 +185,16 @@ function AskCard() {
               messages={headerMessages}
               gmailCompact={!gmailScoped}
               showGmail
+              editableUserMessages
+              editDisabled={state.headerChatLoading}
+              onEditUserMessage={(idx, text) =>
+                editHeaderUserMessage(
+                  idx,
+                  text,
+                  state.homeActiveThreadKey ??
+                    headerHomeSendThreadKey(state.homeActiveThreadKey, state.headerTargetAgent),
+                )
+              }
             />
             {state.headerChatLoading && <ChatTypingIndicator />}
             <div ref={bottomRef} className="h-px shrink-0" aria-hidden />

@@ -10,7 +10,7 @@ function threadAccent(key: HeaderThreadKey): string {
 }
 
 export function HomeRecentConversationsWidget() {
-  const { state, selectHomeConversation } = useAtlas();
+  const { state, selectHomeConversation, deleteHomeConversationThread } = useAtlas();
   const recent = listRecentConversations(state.headerThreads, 5);
   const activeKey = state.homeActiveThreadKey;
 
@@ -36,7 +36,7 @@ export function HomeRecentConversationsWidget() {
           const selected = activeKey === c.key;
           const accent = threadAccent(c.key);
           return (
-            <li key={c.key}>
+            <li key={c.key} className="group relative">
               <button
                 type="button"
                 onClick={() => selectHomeConversation(c.key)}
@@ -46,7 +46,7 @@ export function HomeRecentConversationsWidget() {
                     : 'border-n-border/70 bg-white hover:bg-n-surface-2'
                 }`}
               >
-                <div className="flex items-center justify-between gap-2 mb-1">
+                <div className="flex items-center justify-between gap-2 mb-1 pr-7">
                   <span
                     className="text-[11px] font-bold uppercase tracking-wide"
                     style={{ color: accent }}
@@ -63,6 +63,20 @@ export function HomeRecentConversationsWidget() {
                     Open in ask bar above — continue below
                   </p>
                 )}
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteHomeConversationThread(c.key);
+                }}
+                className="absolute right-3 top-3 w-8 h-8 rounded-lg border border-n-border bg-white text-n-text-muted flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 hover:bg-[#FEF2F2] hover:text-[#C4554D] hover:border-[#FECACA] transition-all shadow-sm"
+                aria-label={`Delete ${c.label} conversation`}
+                title="Delete conversation"
+              >
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 4.5h10M6 4.5V3.5h4v1M5.5 4.5l.5 8h4l.5-8" stroke="currentColor" strokeWidth="1.35" />
+                </svg>
               </button>
             </li>
           );

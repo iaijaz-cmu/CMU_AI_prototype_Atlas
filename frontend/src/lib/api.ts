@@ -164,12 +164,22 @@ export interface CustomMetric {
   unit: string;
 }
 
+export interface G2Metric {
+  score: number;
+  maxScore: number;
+  reviewCount: number | null;
+  url: string;
+  source: string;
+  live: boolean;
+}
+
 export interface CompanyTrack {
   id: string;
   name: string;
   ticker: string;
   chartTicker?: string;
   newsQuery: string;
+  g2Slug?: string;
   metricTypes: string[];
   customMetrics: CustomMetric[];
 }
@@ -220,6 +230,7 @@ export interface ResolvedCompanyMetrics {
   marketTickerIsProxy: boolean;
   newsQuery: string;
   customMetrics: CustomMetric[];
+  g2: G2Metric | null;
   stock: StockMetric | null;
   earnings: EarningsMetric | null;
   news: { count7d: number; headlines: NewsHeadline[] } | null;

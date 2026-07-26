@@ -7,7 +7,8 @@ import { useChatScroll } from './useChatScroll';
 import { theme } from '../lib/theme';
 
 export function FloatingChat() {
-  const { state, toggleChat, onChatDraftChange, sendChat, setChatTag, openAgentFromChat } = useAtlas();
+  const { state, toggleChat, onChatDraftChange, sendChat, setChatTag, openAgentFromChat, editFloatingChatUserMessage } =
+    useAtlas();
 
   const thread: ThreadMessage[] = state.chatMessages.map((m) => ({
     role: m.role,
@@ -62,6 +63,9 @@ export function FloatingChat() {
               citationAccent={AGENT_DEFS[0].accent}
               showGmail={(m, i) => i > 0 && m.role === 'assistant' && !m.text.startsWith('⚠️')}
               onOpenAgent={openAgentFromChat}
+              editableUserMessages
+              editDisabled={state.chatLoading}
+              onEditUserMessage={editFloatingChatUserMessage}
             />
             {state.chatLoading && <ChatTypingIndicator compact />}
             <div ref={bottomRef} className="h-px shrink-0" aria-hidden />

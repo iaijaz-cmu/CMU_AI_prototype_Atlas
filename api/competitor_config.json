@@ -4,6 +4,7 @@
       "id": "google",
       "name": "Google",
       "ticker": "GOOGL",
+      "g2Slug": "google-workspace",
       "newsQuery": "Google Gemini AI workspace",
       "metricTypes": [
         "stock",
@@ -15,24 +16,19 @@
       "id": "notion_ai",
       "name": "Notion AI",
       "ticker": "",
+      "g2Slug": "notion",
       "newsQuery": "Notion AI assistant",
       "metricTypes": [
         "news_7d"
       ],
-      "customMetrics": [
-        {
-          "id": "g2",
-          "label": "G2 score (manual)",
-          "value": "4.7",
-          "unit": "/5"
-        }
-      ],
+      "customMetrics": [],
       "chartTicker": "MSFT"
     },
     {
       "id": "perplexity",
       "name": "Perplexity",
       "ticker": "",
+      "g2Slug": "perplexity",
       "newsQuery": "Perplexity AI enterprise",
       "metricTypes": [
         "news_7d"
@@ -44,6 +40,7 @@
       "id": "granola",
       "name": "Granola",
       "ticker": "",
+      "g2Slug": "granola",
       "newsQuery": "Granola AI meeting notes",
       "metricTypes": [
         "news_7d"
@@ -55,6 +52,7 @@
       "id": "dovetail",
       "name": "Dovetail",
       "ticker": "",
+      "g2Slug": "dovetail-research-pty-ltd-dovetail",
       "newsQuery": "Dovetail research AI UX",
       "metricTypes": [
         "news_7d"
@@ -66,6 +64,7 @@
       "id": "31d54845",
       "name": "OpenAI",
       "ticker": "",
+      "g2Slug": "chatgpt",
       "newsQuery": "OpenAI",
       "metricTypes": [
         "news_7d"

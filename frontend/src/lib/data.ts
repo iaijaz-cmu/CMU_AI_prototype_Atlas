@@ -70,7 +70,6 @@ export const AGENT_DEFS: AgentDef[] = [
       { id: 'roadmap', label: 'Roadmap', icon: 'map' },
       { id: 'approvals', label: 'Approvals', icon: 'check' },
       { id: 'eval', label: 'Eval Scores', icon: 'chart' },
-      { id: 'integrations', label: 'Integrations', icon: 'plug' },
     ],
   },
   {
@@ -89,7 +88,6 @@ export const AGENT_DEFS: AgentDef[] = [
       { id: 'stories', label: 'Jira Stories', icon: 'ticket' },
       { id: 'adr', label: 'ADR Writer', icon: 'decision' },
       { id: 'standup', label: 'Standup Brief', icon: 'bolt' },
-      { id: 'integrations', label: 'Integrations', icon: 'plug' },
     ],
   },
   {
@@ -108,7 +106,6 @@ export const AGENT_DEFS: AgentDef[] = [
       { id: 'tam', label: 'Market Sizing', icon: 'globe' },
       { id: 'signals', label: 'Signals Feed', icon: 'signal' },
       { id: 'report', label: 'Market Report', icon: 'report' },
-      { id: 'integrations', label: 'Integrations', icon: 'plug' },
     ],
   },
   {
@@ -127,7 +124,6 @@ export const AGENT_DEFS: AgentDef[] = [
       { id: 'icp', label: 'ICP Analysis', icon: 'target' },
       { id: 'winloss', label: 'Win / Loss', icon: 'trophy' },
       { id: 'dealbrief', label: 'Deal Brief', icon: 'deal' },
-      { id: 'integrations', label: 'Integrations', icon: 'plug' },
     ],
   },
 ];

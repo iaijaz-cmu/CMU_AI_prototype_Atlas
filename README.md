@@ -78,7 +78,7 @@ User Input → Retrieval (JSON KB) → System Prompt → GPT-4o Mini → Output 
 ```bash
 chmod +x scripts/demo.sh
 ./scripts/demo.sh
-# Present using docs/DEMO_SCRIPT.md — open http://localhost:5173
+# Live: docs/DEMO_SCRIPT.md · Recorded: docs/RECORDED_DEMO.md — open http://127.0.0.1:5173
 ```
 
 ```bash
