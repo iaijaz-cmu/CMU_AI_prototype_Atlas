@@ -1,6 +1,7 @@
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { InlineAgentChat } from './InlineAgentChat';
+import { FloatingChat } from './FloatingChat';
 import { ToolRouter } from './views';
 import { useAtlas } from '../lib/AtlasContext';
 
@@ -22,14 +23,7 @@ export function WorkspaceShell() {
           )}
         </div>
       </div>
-      {!state.inlineChatOpen && (
-        <div
-          className="fixed bottom-[22px] right-[22px] w-9 h-9 rounded-lg bg-white border border-n-border text-n-text-2 flex items-center justify-center text-[13px] font-semibold cursor-pointer shadow-sm z-5 hover:bg-n-surface-2"
-          title="Help"
-        >
-          ?
-        </div>
-      )}
+      {!state.inlineChatOpen && <FloatingChat />}
     </div>
   );
 }

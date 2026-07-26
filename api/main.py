@@ -85,6 +85,13 @@ def _build_generate_response(req: GenerateRequest) -> GenerateResponse:
     if req.scope:
         user_input = f"The user scoped this question to the {req.scope} integration (use that lens when relevant; still ground claims in retrieved context).\n\n{user_input}"
 
+    if competitor_metrics.should_attach_live_metrics(req.message, req.agent):
+        try:
+            live_block = competitor_metrics.format_live_metrics_block(req.message, req.agent)
+            user_input = f"{live_block}\n{user_input}"
+        except Exception:
+            pass
+
     try:
         content, ctx = atlas_core.generate_response(
             user_input,

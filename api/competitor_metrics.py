@@ -325,3 +325,112 @@ def remove_company(config: dict[str, Any], company_id: str) -> None:
 
 def update_config_companies(config: dict[str, Any]) -> None:
     save_config(config)
+
+
+_LIVE_METRIC_KEYWORDS = (
+    "g2",
+    "granola",
+    "notion",
+    "perplexity",
+    "dovetail",
+    "google",
+    "openai",
+    "chatgpt",
+    "competitor",
+    "competitive",
+    "battle card",
+    "battlecard",
+    "rating",
+    "review score",
+    "market pulse",
+    "vs ",
+    "alternative",
+    "positioning",
+)
+
+
+def should_attach_live_metrics(query: str, agent: str | None) -> bool:
+    q = query.lower()
+    if any(k in q for k in _LIVE_METRIC_KEYWORDS):
+        return True
+    if agent in ("market", "sales") and any(
+        k in q for k in ("compare", "competitor", "market", "pitch", "win", "lose")
+    ):
+        return True
+    return False
+
+
+def _select_companies_for_query(companies: list[dict[str, Any]], query: str) -> list[dict[str, Any]]:
+    q = query.lower()
+    matched: list[dict[str, Any]] = []
+    for c in companies:
+        name = (c.get("name") or "").lower()
+        cid = (c.get("id") or "").lower()
+        first = name.split()[0] if name else ""
+        if name and name in q:
+            matched.append(c)
+            continue
+        if first and len(first) >= 4 and first in q:
+            matched.append(c)
+            continue
+        if cid.replace("_", " ") in q or cid.replace("_", "") in q.replace(" ", ""):
+            matched.append(c)
+    if matched:
+        seen: set[str] = set()
+        unique: list[dict[str, Any]] = []
+        for c in matched:
+            if c["id"] not in seen:
+                seen.add(c["id"])
+                unique.append(c)
+        return unique
+    return companies
+
+
+def format_live_metrics_block(query: str, agent: str | None = None) -> str:
+    """Build markdown block for LLM prompts (G2 + optional stock/news)."""
+    del agent  # reserved for future agent-specific filtering
+    cfg = load_config()
+    companies = _select_companies_for_query(cfg.get("companies", []), query)
+    q = query.lower()
+    include_stock = any(k in q for k in ("stock", "1d", "price", "move", "pulse", "market", "ticker"))
+    include_news = any(k in q for k in ("news", "headline", "press"))
+
+    lines = [
+        "## Live Competitor Metrics (Atlas API — use for G2 / pulse in this answer)",
+        "These figures were fetched live for this request. Use them when the user asks about G2, ratings, or competitor pulse.",
+        "Do not say G2 data is absent from context when a score appears below. For rows marked unavailable, explain live fetch failed (e.g. not on G2 catalog) and supplement with KB competitor intel.",
+        "",
+    ]
+
+    for c in companies:
+        parts: list[str] = []
+        g2 = g2_integration.resolve_g2_for_company(c)
+        if g2:
+            extra = f", {g2['reviewCount']} G2 reviews" if g2.get("reviewCount") else ""
+            parts.append(f"G2 **{g2['score']}/{g2['maxScore']}** ({g2['source']}{extra}) — {g2['url']}")
+        else:
+            slug = g2_integration.company_g2_slug(c)
+            parts.append(f"G2 **not available** (live fetch; slug `{slug}` — set G2_API_TOKEN or check g2.com listing)")
+
+        symbol = market_ticker(c)
+        if include_stock and symbol:
+            try:
+                stock = fetch_stock_series(symbol)
+                ch = stock.get("changePct1d")
+                if ch is not None:
+                    parts.append(f"stock {symbol} 1d change **{ch:+.1f}%** (Yahoo)")
+            except Exception as e:
+                parts.append(f"stock {symbol}: unavailable ({e})")
+
+        if include_news:
+            try:
+                nq = f"{c.get('newsQuery') or c['name']} when:7d"
+                headlines = news_integration.fetch_headlines(nq, "google", 5)
+                parts.append(f"**{len(headlines)}** news hits (7d, Google)")
+            except Exception:
+                parts.append("news count unavailable")
+
+        lines.append(f"- **{c['name']}**: " + "; ".join(parts))
+
+    lines.append("")
+    return "\n".join(lines)

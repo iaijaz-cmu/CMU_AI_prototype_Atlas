@@ -14,8 +14,15 @@ import {
 
 const COLORS = ['#9065B0', '#37352F', '#448361', '#337EA9', '#D9730D', '#C4554D', '#9B9A97'];
 
+/** Softer fills for the summary bar chart (one distinct hue per competitor). */
+const MUTED_BAR_COLORS = ['#A894BC', '#7A7672', '#7FA88C', '#7A9FB5', '#C49A6C', '#C08883', '#ADACA8'];
+
 function colorForIndex(i: number) {
   return COLORS[i % COLORS.length];
+}
+
+function mutedBarColorForIndex(i: number) {
+  return MUTED_BAR_COLORS[i % MUTED_BAR_COLORS.length];
 }
 
 function formatShortDate(unixSec: number) {
@@ -32,10 +39,12 @@ function StockChart({
   series,
   color,
   currency,
+  companyName,
 }: {
   series: { t: number; close: number }[];
   color: string;
   currency: string;
+  companyName: string;
 }) {
   if (series.length < 2) return null;
 
@@ -65,8 +74,7 @@ function StockChart({
   return (
     <figure className="m-0 mt-2">
       <figcaption className="text-[10px] text-[#78716C] mb-1 leading-snug">
-        <strong>What this shows:</strong> daily <strong>closing stock price</strong> ({currency}) — X = trading day, Y =
-        price. Useful for spotting recent market moves vs. your narrative on the competitor.
+        <strong>{companyName}</strong> — daily closing price ({currency}). Horizontal axis = trading days.
       </figcaption>
       <svg
         width="100%"
@@ -238,91 +246,116 @@ function EarningsBarChart({ earnings, accent }: { earnings: EarningsMetric; acce
   );
 }
 
-function AllCompetitorsYoyChart({
+function competitorColor(companies: ResolvedCompanyMetrics[], companyId: string): string {
+  const idx = companies.findIndex((c) => c.id === companyId);
+  return colorForIndex(idx >= 0 ? idx : 0);
+}
+
+function competitorMutedBarColor(companies: ResolvedCompanyMetrics[], companyId: string): string {
+  const idx = companies.findIndex((c) => c.id === companyId);
+  return mutedBarColorForIndex(idx >= 0 ? idx : 0);
+}
+
+function shortCompetitorLabel(name: string, maxLen = 14) {
+  if (name.length <= maxLen) return name;
+  return `${name.slice(0, maxLen - 1)}…`;
+}
+
+function AllCompetitorsStockBarChart({
   companies,
   accent,
 }: {
   companies: ResolvedCompanyMetrics[];
   accent: string;
 }) {
-  const items = companies.map((c, i) => ({
+  const items = companies.map((c) => ({
+    id: c.id,
     name: c.name,
-    color: colorForIndex(i),
-    yoy: c.earnings?.avgYoyPctCurrentYear ?? null,
-    marketTicker: c.marketTicker,
-    isProxy: c.marketTickerIsProxy,
+    barColor: competitorMutedBarColor(companies, c.id),
+    changePct1d: c.stock?.changePct1d ?? null,
   }));
-  const withData = items.filter((x): x is typeof x & { yoy: number } => x.yoy != null);
+  const withData = items.filter((x): x is typeof x & { changePct1d: number } => x.changePct1d != null);
   if (withData.length === 0) return null;
-  const plotH = 96;
-  const values = withData.map((x) => x.yoy);
-  const maxAbs = Math.max(...values.map((v) => Math.abs(v)), 5);
+
+  const plotH = 88;
+  const values = withData.map((x) => x.changePct1d);
+  const maxAbs = Math.max(...values.map((v) => Math.abs(v)), 1);
   const yMax = maxAbs;
   const yMin = -maxAbs;
-  const calendarYear = companies.find((c) => c.earnings)?.earnings?.calendarYear ?? new Date().getFullYear();
+  const colMin = Math.max(56, Math.min(88, Math.floor(520 / Math.max(items.length, 1))));
 
   return (
     <figure className="m-0 mb-4">
       <figcaption className="text-[10px] text-[#78716C] mb-2 leading-snug">
-        <strong>All tracked competitors</strong> — average <strong>EPS YoY %</strong> across reported quarters in{' '}
-        {calendarYear}. Private names use a <strong>proxy ticker</strong> (editable in config); label shows symbol used.
+        <strong>1-day share price change</strong> for each tracked competitor (Yahoo Finance). Bar color matches the
+        detail cards below.
       </figcaption>
-      <div className="flex gap-2">
+      <div className="flex gap-2 items-start">
         <div className="flex flex-col justify-between shrink-0 text-right pr-1" style={{ height: plotH, width: 40 }}>
-          <span className="text-[9px] font-mono text-[#57534E]">+{yMax}%</span>
+          <span className="text-[9px] font-mono text-[#57534E]">+{yMax.toFixed(1)}%</span>
           <span className="text-[9px] font-mono text-[#57534E]">0%</span>
-          <span className="text-[9px] font-mono text-[#57534E]">{yMin}%</span>
+          <span className="text-[9px] font-mono text-[#57534E]">{yMin.toFixed(1)}%</span>
         </div>
-        <div className="flex-1 flex items-end gap-2 border-l border-b border-[#A8A29E] pl-2 pb-1 relative" style={{ height: plotH }}>
-          <div className="absolute left-2 right-0 border-t border-dashed border-[#78716C]" style={{ bottom: '50%' }} />
-          {items.map((item) => {
-            const yoy = item.yoy;
-            const pct = yoy ?? 0;
-            const height = yoy == null ? 4 : (Math.abs(pct) / maxAbs) * (plotH / 2 - 4);
-            const positive = pct >= 0;
-            return (
-              <div key={item.name} className="flex-1 flex flex-col items-center justify-end min-w-0 h-full">
-                {yoy == null ? (
-                  <span className="text-[8px] text-[#A8A29E] mb-1">n/a</span>
-                ) : (
-                  <span className="text-[9px] font-mono font-bold text-[#3f3d38] mb-0.5">
-                    {yoy >= 0 ? '+' : ''}
-                    {yoy}%
-                  </span>
-                )}
-                <div className="flex flex-col justify-end w-full items-center" style={{ height: plotH / 2 }}>
-                  {yoy != null && positive && (
-                    <div
-                      className="w-full rounded-t-md min-h-[3px]"
-                      style={{ height, background: item.color }}
-                      title={`${item.name} (${item.marketTicker}): avg YoY ${yoy}%`}
-                    />
-                  )}
+        <div className="flex-1 min-w-0 overflow-x-auto pb-1">
+          <div
+            className="inline-grid gap-x-2 w-full min-w-full"
+            style={{ gridTemplateColumns: `repeat(${items.length}, minmax(${colMin}px, 1fr))` }}
+          >
+            {items.map((item) => {
+              const ch = item.changePct1d;
+              const pct = ch ?? 0;
+              const height = ch == null ? 4 : (Math.abs(pct) / maxAbs) * (plotH / 2 - 6);
+              const positive = pct >= 0;
+              return (
+                <div key={`${item.id}-plot`} className="relative border-l border-b border-[#A8A29E] pl-1 pr-1">
+                  <div
+                    className="absolute left-1 right-1 border-t border-dashed border-[#78716C]"
+                    style={{ top: plotH / 2 }}
+                  />
+                  <div className="flex flex-col items-center justify-end" style={{ height: plotH }}>
+                    {ch == null ? (
+                      <span className="text-[8px] text-[#A8A29E] mb-1">n/a</span>
+                    ) : (
+                      <span className="text-[9px] font-mono font-bold text-[#3f3d38] mb-0.5 whitespace-nowrap">
+                        {ch >= 0 ? '+' : ''}
+                        {ch.toFixed(2)}%
+                      </span>
+                    )}
+                    <div className="flex flex-col justify-end w-full items-center" style={{ height: plotH / 2 }}>
+                      {ch != null && positive && (
+                        <div
+                          className="w-[85%] rounded-t-md min-h-[3px]"
+                          style={{ height, background: item.barColor }}
+                          title={`${item.name}: 1d ${ch >= 0 ? '+' : ''}${ch}%`}
+                        />
+                      )}
+                    </div>
+                    <div className="flex flex-col justify-start w-full items-center" style={{ height: plotH / 2 }}>
+                      {ch != null && !positive && (
+                        <div
+                          className="w-[85%] rounded-b-md min-h-[3px]"
+                          style={{ height, background: item.barColor }}
+                          title={`${item.name}: 1d ${ch}%`}
+                        />
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex flex-col justify-start w-full items-center" style={{ height: plotH / 2 }}>
-                  {yoy != null && !positive && (
-                    <div
-                      className="w-full rounded-b-md min-h-[3px]"
-                      style={{ height, background: '#dc2626' }}
-                    />
-                  )}
-                </div>
-                <span className="text-[8px] text-[#57534E] truncate w-full text-center mt-1" title={item.name}>
-                  {item.name.split(' ')[0]}
-                </span>
-                {item.marketTicker && (
-                  <span className="text-[7px] font-mono text-[#A8A29E]">
-                    {item.isProxy ? '~' : ''}
-                    {item.marketTicker}
-                  </span>
-                )}
+              );
+            })}
+            {items.map((item) => (
+              <div key={`${item.id}-label`} className="pt-2 px-0.5 text-center min-h-[28px]">
+                <p className="text-[10px] font-semibold text-[#3f3d38] m-0 leading-tight break-words" title={item.name}>
+                  {shortCompetitorLabel(item.name, 18)}
+                </p>
               </div>
-            );
-          })}
+            ))}
+          </div>
         </div>
       </div>
-      <p className="text-[9px] font-semibold text-center mt-1 m-0" style={{ color: accent }}>
-        Competitor (X) · Avg EPS YoY % this year (Y)
+      <p className="text-[9px] text-[#A8A29E] m-0 mt-2 text-center">
+        X-axis: competitor · Y-axis: 1-day price change % ·{' '}
+        <span style={{ color: accent }}>{items.length} tracked</span>
       </p>
     </figure>
   );
@@ -372,7 +405,7 @@ function PriceAndEarningsCharts({
               {stock.changePct1d}% vs prior day
             </span>
           </p>
-          <StockChart series={stock.series} color={color} currency={stock.currency} />
+          <StockChart series={stock.series} color={color} currency={stock.currency} companyName={name} />
         </div>
       ) : marketTicker ? (
         <p className="text-[12px] text-[#92400e] m-0 mb-2">Stock price unavailable for {marketTicker}.</p>
@@ -575,11 +608,11 @@ export function CompetitorPulseWidget({ accent, accentBg }: Props) {
         <>
           <div className="rounded-xl px-3 py-4 mb-4" style={{ background: accentBg }}>
             <p className="text-[11px] font-bold uppercase tracking-wide m-0 mb-2" style={{ color: accent }}>
-              Stock price &amp; EPS YoY · all competitors
+              Stock pulse · all competitors
             </p>
-            <AllCompetitorsYoyChart companies={companies} accent={accent} />
-            <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))' }}>
-              {companies.map((c, idx) => (
+            <AllCompetitorsStockBarChart companies={companies} accent={accent} />
+            <div className="grid gap-3 mt-3" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))' }}>
+              {companies.map((c) => (
                 <PriceAndEarningsCharts
                   key={c.id}
                   name={c.name}
@@ -587,7 +620,7 @@ export function CompetitorPulseWidget({ accent, accentBg }: Props) {
                   marketTickerIsProxy={c.marketTickerIsProxy}
                   stock={c.stock}
                   earnings={c.earnings}
-                  color={colorForIndex(idx)}
+                  color={competitorColor(companies, c.id)}
                   accent={accent}
                 />
               ))}
